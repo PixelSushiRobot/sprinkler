@@ -487,29 +487,30 @@
       flex-direction: column;
       align-items: center;
       gap: 9px;
-      min-height: 172px
-    }
-
-    .tile {
+      min-height: 172px;
       cursor: grab;
       touch-action: none;
       user-select: none;
-      -webkit-user-select: none
+      -webkit-user-select: none;
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1)
     }
 
-    .tile.drag {
-      opacity: 1;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, .22);
-      z-index: 5;
-      cursor: grabbing
+    /* Photos-style lifted tile */
+    .tile.lifted {
+      position: fixed;
+      left: 0;
+      top: 0;
+      margin: 0;
+      z-index: 999;
+      pointer-events: none;
+      transition: none;
+      box-shadow: 0 18px 36px rgba(0, 0, 0, .35)
     }
 
-    .tile.ins-before {
-      box-shadow: inset 3px 0 0 var(--accent)
-    }
-
-    .tile.ins-after {
-      box-shadow: inset -3px 0 0 var(--accent)
+    .placeholder {
+      border: 1px dashed var(--line);
+      background: color-mix(in srgb, var(--bg) 80%, transparent);
+      transition: transform .22s cubic-bezier(.2, .8, .2, 1)
     }
 
     .tilefill {
@@ -1075,7 +1076,6 @@
     function rollYolo() {
       const n = creators.length;
       if (yoloLevel === 'jackpot') {
-        // 35% chance to roll a true single jackpot, 65% chance for a wild curve without forcing a guaranteed winner
         const isTrueJackpot = Math.random() < 0.35;
         const winner = isTrueJackpot ? Math.floor(Math.random() * n) : -1;
         creators.forEach((c, i) => {
@@ -1083,7 +1083,7 @@
           if (isTrueJackpot) {
             c._yolo = (i === winner ? 1 : Math.random() * 0.15);
           } else {
-            c._yolo = Math.pow(Math.random(), 6); // high variance wild distribution
+            c._yolo = Math.pow(Math.random(), 6);
           }
         });
       } else {
@@ -1227,48 +1227,114 @@
     /* temporary: fill 9 for testing */
     $('fillTest').onclick = () => { creators = PRESETS.slice(0, 9).map(p => { const c = makeCreator(p.handle); c.name = p.name; return c; }); renderAll(); };
 
-    /* pointer sortable — slot targeting from container geometry (immune to FLIP transforms) */
+    /* Photos-style Drag and Drop */
     (function () {
-      const g = $('grid'); const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v)); let active = null, pid = null, moved = false;
-      function flip(mutate) {
-        const tiles = [...g.querySelectorAll('.tile')]; const first = tiles.map(t => t.getBoundingClientRect()); mutate();
-        tiles.forEach((t, i) => { const last = t.getBoundingClientRect(); const dx = first[i].left - last.left, dy = first[i].top - last.top; if (dx || dy) { t.style.transition = 'none'; t.style.transform = `translate(${dx}px,${dy}px)`; requestAnimationFrame(() => { t.style.transition = ''; t.style.transform = ''; }); } });
-      }
-      g.addEventListener('pointerdown', e => {
+      const grid = $('grid');
+      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+      let active = null, placeholder = null, grabX = 0, grabY = 0;
+
+      grid.addEventListener('pointerdown', e => {
         if (e.target.closest('.x')) return;
-        const tile = e.target.closest('.tile'); if (!tile) return;
+        const tile = e.target.closest('.tile');
+        if (!tile) return;
         e.preventDefault();
-        active = tile; pid = e.pointerId; moved = false; active.classList.add('drag');
-        try { active.setPointerCapture(pid); } catch (_) { }
+        active = tile;
+
+        const r = tile.getBoundingClientRect();
+        grabX = e.clientX - r.left;
+        grabY = e.clientY - r.top;
+
+        placeholder = document.createElement('div');
+        placeholder.className = 'placeholder';
+        placeholder.style.width = r.width + 'px';
+        placeholder.style.height = r.height + 'px';
+        grid.insertBefore(placeholder, tile);
+
+        document.body.appendChild(active);
+        active.classList.add('lifted');
+        active.style.width = r.width + 'px';
+        active.style.height = r.height + 'px';
+        moveLifted(e.clientX, e.clientY);
+
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
       });
-      g.addEventListener('pointermove', e => {
-        if (!active) return; e.preventDefault(); moved = true;
-        const cs = getComputedStyle(g);
+
+      function onMove(e) {
+        if (!active) return;
+        moveLifted(e.clientX, e.clientY);
+
+        const cs = getComputedStyle(grid);
         const cols = cs.gridTemplateColumns.split(' ').filter(Boolean).length || 3;
         const gap = parseFloat(cs.columnGap || cs.gap) || 10;
-        const rect = g.getBoundingClientRect();
+        const rect = grid.getBoundingClientRect();
         const colW = (rect.width - gap * (cols - 1)) / cols;
-        const tileH = (g.querySelector('.tile') || {}).offsetHeight || 172;
+        const tileH = (placeholder || {}).offsetHeight || 172;
         const stepX = colW + gap, stepY = tileH + gap;
-        const kids = [...g.children].filter(el => el.classList.contains('tile')); const n = kids.length; const rows = Math.ceil(n / cols);
+
+        const children = [...grid.children];
+        const rows = Math.ceil(children.length / cols);
         const col = clamp(Math.floor((e.clientX - rect.left) / stepX), 0, cols - 1);
         const row = clamp(Math.floor((e.clientY - rect.top) / stepY), 0, rows - 1);
-        const index = Math.min(row * cols + col, n - 1);
-        const target = kids[index]; if (!target || target === active) return;
-        const dropAfter = kids.indexOf(active) < index;
-        flip(() => g.insertBefore(active, dropAfter ? target.nextElementSibling : target));
-      });
-      function end() {
-        if (!active) return; try { active.releasePointerCapture(pid); } catch (_) { }
-        active.classList.remove('drag');
-        const order = [...g.querySelectorAll('.tile')].map(el => el.dataset.id);
-        creators.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-        const wm = moved; active = null; pid = null; moved = false;
-        if (wm) renderAll();
+        const index = Math.min(row * cols + col, children.length - 1);
+
+        const target = children[index];
+        if (!target || target === placeholder) return;
+
+        const after = children.indexOf(placeholder) < index;
+        flip(() => grid.insertBefore(placeholder, after ? target.nextElementSibling : target));
       }
-      g.addEventListener('pointerup', end);
-      g.addEventListener('pointercancel', end);
+
+      function moveLifted(x, y) {
+        active.style.transform = `translate(${x - grabX}px, ${y - grabY}px) scale(1.04)`;
+      }
+
+      function onUp() {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+
+        if (!active || !placeholder) return;
+
+        const p = placeholder.getBoundingClientRect();
+        active.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)';
+        active.style.transform = `translate(${p.left}px, ${p.top}px) scale(1)`;
+
+        setTimeout(() => {
+          grid.insertBefore(active, placeholder);
+          placeholder.remove();
+          active.classList.remove('lifted');
+          active.removeAttribute('style');
+
+          // Update creator model array based on final DOM ordering
+          const newOrderIds = [...grid.querySelectorAll('.tile')].map(el => el.dataset.id);
+          creators.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+
+          active = placeholder = null;
+          renderAll();
+        }, 220);
+      }
+
+      function flip(mutate) {
+        const items = [...grid.children];
+        const first = items.map(el => el.getBoundingClientRect());
+        mutate();
+        items.forEach((el, i) => {
+          const last = el.getBoundingClientRect();
+          const dx = first[i].left - last.left;
+          const dy = first[i].top - last.top;
+          if (dx || dy) {
+            el.style.transition = 'none';
+            el.style.transform = `translate(${dx}px, ${dy}px)`;
+            requestAnimationFrame(() => {
+              el.style.transition = '';
+              el.style.transform = '';
+            });
+          }
+        });
+      }
     })();
+
     window.addEventListener('resize', () => layoutNums());
 
     renderAll();
