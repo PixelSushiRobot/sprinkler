@@ -71,7 +71,7 @@
     }
 
     .wrap {
-      max-width: 880px;
+      max-width: 1080px;
       margin: 0 auto
     }
 
@@ -140,10 +140,30 @@
       height: 15px
     }
 
-    .panel {
+    .box {
       background: var(--box);
       border: 1px solid var(--line);
-      padding: 18px
+      padding: 16px
+    }
+
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px
+    }
+
+    .pcols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: start
+    }
+
+    @media (max-width:760px) {
+      .pcols {
+        grid-template-columns: 1fr;
+        gap: 20px
+      }
     }
 
     .phead {
@@ -164,6 +184,18 @@
       margin-left: auto;
       color: var(--dim);
       letter-spacing: .1em
+    }
+
+    .phead .bn {
+      color: var(--dim);
+      letter-spacing: .1em
+    }
+
+    .slead {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0 0 14px
     }
 
     .testbtn {
@@ -219,6 +251,12 @@
     .btn.ghost:hover:not(:disabled) {
       border-color: var(--accent);
       opacity: 1
+    }
+
+    .wc-btn {
+      padding: 6px 12px;
+      font-size: 10px;
+      letter-spacing: .1em
     }
 
     /* search */
@@ -306,17 +344,52 @@
     /* controls */
     .controls {
       display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 14px;
       align-items: flex-start;
       margin-bottom: 10px
     }
 
     .methodbar {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 6px
+    }
+
+    .mrow {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 12px 14px;
+      cursor: pointer
+    }
+
+    .mrow:hover {
+      color: var(--ink)
+    }
+
+    .mrow.sel {
+      color: var(--ink);
+      background: color-mix(in srgb, var(--bg) 92%, var(--ink) 8%);
+      border-color: color-mix(in srgb, var(--ink) 55%, transparent)
+    }
+
+    .mtag {
+      margin-left: auto;
+      font-size: 9.5px;
+      letter-spacing: .12em;
+      color: var(--dim);
+      border: 1px solid var(--line);
+      padding: 2px 7px
     }
 
     .mbtn {
@@ -369,7 +442,7 @@
     }
 
     .amount .field span {
-      padding: 0 3px 0 11px;
+      padding: 0 11px 0 3px;
       color: var(--muted);
       font-weight: 600
     }
@@ -381,12 +454,37 @@
       width: 82px;
       border: none;
       background: transparent;
-      padding: 9px 11px 9px 2px;
+      padding: 9px 2px 9px 11px;
       color: var(--ink)
     }
 
     .amount input:focus {
       outline: none
+    }
+
+    .presets {
+      display: flex;
+      gap: 6px
+    }
+
+    .preset {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 12px;
+      line-height: 1
+    }
+
+    .preset:hover {
+      color: var(--ink)
+    }
+
+    .preset.sel {
+      color: var(--ink);
+      border-color: var(--ink)
     }
 
     .mhint {
@@ -893,8 +991,8 @@
     }
 
     .foot .sub2 {
-      text-transform: none;
-      letter-spacing: 0;
+      text-transform: uppercase;
+      letter-spacing: .06em;
       font-size: 10.5px;
       margin-top: 6px
     }
@@ -929,8 +1027,7 @@
     <header>
       <div class="head-l">
         <h1>Sprinkler</h1>
-        <p class="sub">You know who you want to support — you just freeze on the split. Pick nine, choose a vibe, let it
-          pour. Fairly-ish.</p>
+        <p class="sub">You know who you want to support but your math is not mathing. Just pick nine, choose a vibe, and let the Sprinkler sort it out.</p>
       </div>
       <div class="theme-toggle" id="themeToggle">
         <button class="th-btn" data-theme-choice="light" title="Light"><svg viewBox="0 0 24 24" fill="none"
@@ -951,51 +1048,70 @@
       </div>
     </header>
 
-    <div class="panel">
-      <div class="phead">Your nine<button id="fillTest" class="testbtn">fill 9 · test</button><span class="count"
-          id="count">0 / 9</span></div>
+    <div class="pcols">
+      <div class="col col-left">
+        <section class="box">
+          <div class="phead"><span class="bn">01</span>Pick nine</div>
+          <p class="slead">Search a name or paste a Tezos wallet. Nine is the number — enough to be a real garden, not just your two best friends.</p>
+          <div class="searchwrap">
+            <input id="search" placeholder="search a name, or paste a Tezos wallet" autocomplete="off" spellcheck="false">
+            <div class="results" id="results"></div>
+          </div>
+          <div class="err" id="addErr"></div>
+        </section>
 
-      <div class="searchwrap">
-        <input id="search" placeholder="search a creator, or paste tz1… / .tez" autocomplete="off" spellcheck="false">
-        <div class="results" id="results"></div>
-      </div>
-      <div class="err" id="addErr"></div>
+        <section class="box">
+          <div class="phead"><span class="bn">02</span>How much</div>
+          <div class="amount">
+            <div class="presets" id="presets">
+              <button type="button" class="preset" data-amt="9">9</button>
+              <button type="button" class="preset" data-amt="90">90</button>
+              <button type="button" class="preset" data-amt="900">900</button>
+            </div>
+            <div class="field"><input id="amount" type="number" min="1" step="1" value="1000"><span>XTZ</span></div>
+          </div>
+        </section>
 
-      <div class="controls">
-        <div class="methodbar" id="methodbar"></div>
-        <div class="amount">
-          <label>Pot</label>
-          <div class="field"><span>ꜩ</span><input id="amount" type="number" min="1" step="1" value="1000"></div>
-        </div>
+        <section class="box">
+          <div class="phead"><span class="bn">03</span>How to sprinkle</div>
+          <p class="slead">Same nine, five ways to pour. Everyone clears the floor — no dust, no hogging the hose.</p>
+          <div class="methodbar" id="methodbar"></div>
+          <div class="mhint" id="mdesc"></div>
+          <div class="yolobar" id="yolobar" style="display:none"></div>
+        </section>
       </div>
-      <div class="mhint" id="mdesc"></div>
-      <div class="yolobar" id="yolobar" style="display:none"></div>
 
-      <div class="gridwrap">
-        <div class="grid" id="grid"></div>
-        <div class="numlayer" id="numlayer"></div>
+      <div class="col col-right">
+        <section class="box">
+          <div class="phead"><span class="bn">04</span>Your nine<button id="fillTest" class="testbtn">fill 9 · test</button><span class="count"
+              id="count">0 / 9</span></div>
+          <div class="gridwrap">
+            <div class="grid" id="grid"></div>
+            <div class="numlayer" id="numlayer"></div>
+          </div>
+          <div class="splitfoot" id="splitfoot"></div>
+          <button class="btn" id="sprinkleBtn" style="margin-top:16px;width:100%" disabled>sprinkle it</button>
+        </section>
       </div>
-      <div class="splitfoot" id="splitfoot"></div>
-      <button class="btn" id="sprinkleBtn" style="margin-top:16px;width:100%" disabled>sprinkle it</button>
     </div>
 
     <div class="overlay" id="overlay">
       <div class="dialog">
         <button class="ov-close" id="ovClose" title="close">×</button>
         <div id="confirmPane">
-          <h3>Sprinkle</h3>
+          <h3>Ready to sprinkle?</h3>
           <div class="rcpt">
-            <div class="rcpt-row"><span class="k">From</span><span class="v" id="fromWallet">tz1qsprk…k4x9</span></div>
-            <div class="rcpt-row"><span class="k">Sprinkling</span><span class="v" id="rcptAmt">1000 ꜩ</span></div>
-            <div class="rcpt-row"><span class="k">Across</span><span class="v">9 creators · one operation</span></div>
+            <div class="rcpt-row" id="walletRow"><span class="k" id="walletK">Wallet</span><span class="v" id="walletVal"></span></div>
+            <div class="rcpt-row"><span class="k">Sprinkling</span><span class="v" id="rcptAmt">1000 XTZ</span></div>
+            <div class="rcpt-row"><span class="k">Across</span><span class="v">9 creators · one transaction</span></div>
           </div>
           <table class="ov-table" id="confirmTable"></table>
-          <button class="btn" id="confirmBtn" style="width:100%">sprinkle 1000 ꜩ</button>
-          <p class="note">You'll confirm the transaction in your wallet.</p>
+          <button class="btn" id="confirmBtn" style="width:100%" disabled>sprinkle 1000 XTZ</button>
+          <p class="note">Your wallet has the final say.</p>
         </div>
         <div id="successPane" style="display:none">
           <canvas id="gardenCanvas" width="1080" height="1080"></canvas>
-          <div class="success-head">Sprinkled ✓</div>
+          <div class="success-head">Garden watered ✓</div>
           <p class="ov-lead" id="successLead"></p>
           <div class="share-label">Share your garden</div>
           <div class="share-box" id="shareText"></div>
@@ -1067,11 +1183,11 @@
     function full() { return creators.length === 9; }
 
     const METHODS = [
-      { k: 'equal', n: 'Everyone Eats', d: 'Even split — nine equal plates.' },
-      { k: 'boss', n: 'I Am The Boss', d: 'You rank them (drag the tiles). The top gets the biggest pour.' },
-      { k: 'tree', n: 'Big Tree Energy', d: 'More to the most active on-chain.' },
-      { k: 'ants', n: 'Save The Ants', d: 'More to the least-funded so far.' },
-      { k: 'yolo', n: 'YOLO', d: 'Chance rolls it. Pick a wildness — Jackpot has a chance for big spikes.' },
+      { k: 'equal', n: 'Everyone Eats', t: 'EQUAL', d: 'No one left behind — an equal pour for all nine.' },
+      { k: 'boss', n: 'I Am The Boss', t: 'RANKED', d: 'Drag to rank — #1 gets the biggest pour.' },
+      { k: 'tree', n: 'Big Tree Energy', t: 'ACTIVE', d: 'More to the most active onchain.' },
+      { k: 'ants', n: 'Save The Ants', t: 'NEEDIEST', d: 'More to the least-funded so far.' },
+      { k: 'yolo', n: 'YOLO', t: 'RANDOM', d: 'Chance rolls it — crank the wildness, and Jackpot swings big.' },
     ];
     function rollYolo() {
       const n = creators.length;
@@ -1096,7 +1212,7 @@
     const DICE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.4" fill="currentColor" stroke="none"/></svg>';
     function renderMethods() {
       const m = $('methodbar'); m.innerHTML = '';
-      METHODS.forEach(mt => { const b = document.createElement('button'); b.className = 'mbtn' + (method === mt.k ? ' sel' : ''); b.textContent = mt.n; b.onclick = () => { method = mt.k; if (mt.k === 'yolo') rollYolo(); renderAll(); }; m.appendChild(b); });
+      METHODS.forEach(mt => { const b = document.createElement('button'); b.className = 'mrow' + (method === mt.k ? ' sel' : ''); b.innerHTML = `<span>${mt.n}</span><span class="mtag">${mt.t}</span>`; b.onclick = () => { method = mt.k; if (mt.k === 'yolo') rollYolo(); renderAll(); }; m.appendChild(b); });
       const cur = METHODS.find(x => x.k === method);
       $('mdesc').textContent = cur.d;
       document.documentElement.classList.toggle('ranking', method === 'boss');
@@ -1104,7 +1220,7 @@
       if (method === 'yolo') {
         yb.style.display = ''; yb.innerHTML = '<span class="ylabel">wildness</span>';
         [['chill', 'Chill'], ['wild', 'Wild'], ['jackpot', 'Jackpot']].forEach(([k, label]) => { const b = document.createElement('button'); b.className = 'mbtn' + (yoloLevel === k ? ' sel' : ''); b.textContent = label; b.onclick = () => { yoloLevel = k; rollYolo(); renderAll(); }; yb.appendChild(b); });
-        const rr = document.createElement('button'); rr.className = 'mbtn reroll'; rr.innerHTML = DICE + ' re-roll'; rr.onclick = () => { rollYolo(); renderAll(); }; yb.appendChild(rr);
+        const rr = document.createElement('button'); rr.className = 'mbtn reroll'; rr.innerHTML = DICE + ' run it back'; rr.onclick = () => { rollYolo(); renderAll(); }; yb.appendChild(rr);
       } else yb.style.display = 'none';
     }
     function renderGrid() {
@@ -1126,7 +1242,7 @@
           if (win) {
             crownHtml = `<div class="crown" title="Jackpot Winner"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg></div>`;
           }
-          numHtml = `<div class="num"><span class="tz">${(pot * pc / 100).toFixed(1)} ꜩ</span></div>`;
+          numHtml = `<div class="num"><span class="tz">${(pot * pc / 100).toFixed(1)} XTZ</span></div>`;
         }
 
         t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${avatarSVG(c.id)}" alt=""><div class="nm">${c.name}</div>${numHtml}`;
@@ -1137,7 +1253,7 @@
       for (let k = creators.length; k < 9; k++) { const s = document.createElement('div'); s.className = 'eslot'; s.textContent = '+'; g.appendChild(s); }
       $('count').textContent = creators.length + ' / 9';
       $('sprinkleBtn').disabled = !on;
-      $('splitfoot').textContent = on ? `${pot} ꜩ across 9 · one operation` : `add ${9 - creators.length} more to complete your nine`;
+      $('splitfoot').textContent = on ? `${pot} XTZ across nine · one transaction` : `plant ${9 - creators.length} more`;
       layoutNums();
     }
     function layoutNums() {
@@ -1158,15 +1274,15 @@
       let html = '';
       items.slice(0, 6).forEach(p => { html += `<div class="ritem" data-h="${p.handle}" data-n="${p.name}"><img class="av" src="${avatarSVG(p.handle)}" alt=""><div class="info"><div class="rn">${p.name}</div><div class="rs">${(p.src || ['teztree']).join(' · ')}</div></div></div>`; });
       const c = makeCreator(q);
-      if (c && !creators.some(x => x.id === c.id)) html += `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">manual · resolves on-chain</div></div></div>`;
+      if (c && !creators.some(x => x.id === c.id)) html += `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">manual · resolves onchain</div></div></div>`;
       if (!html) html = `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">no matches — paste a tz1… or a .tez name</div></div></div>`;
       box.innerHTML = html; box.classList.add('show');
       box.querySelectorAll('.ritem[data-h]').forEach(el => el.onclick = () => { addPreset({ name: el.dataset.n, handle: el.dataset.h }); clearSearch(); });
       box.querySelectorAll('.ritem[data-manual]').forEach(el => el.onclick = () => { addCreator(el.dataset.manual); clearSearch(); });
     }
     function clearSearch() { $('search').value = ''; $('results').classList.remove('show'); $('results').innerHTML = ''; }
-    function addCreator(v) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = 'your nine is full — that\'s the whole point'; return; } const c = makeCreator(v); if (!c) { $('addErr').textContent = "hmm, that doesn't look like a tz address or a .tez name"; return; } if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; } creators.push(c); renderAll(); }
-    function addPreset(p) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = 'your nine is full — that\'s the whole point'; return; } const c = makeCreator(p.handle); if (!c) return; c.name = p.name; if (creators.some(x => x.id === c.id)) return; creators.push(c); renderAll(); }
+    function addCreator(v) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(v); if (!c) { $('addErr').textContent = "not a tz address or a .tez name"; return; } if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; } creators.push(c); renderAll(); }
+    function addPreset(p) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(p.handle); if (!c) return; c.name = p.name; if (creators.some(x => x.id === c.id)) return; creators.push(c); renderAll(); }
 
     $('search').addEventListener('input', e => renderResults(e.target.value));
     $('search').addEventListener('keydown', e => { if (e.key === 'Enter') { const first = $('results').querySelector('.ritem[data-h],.ritem[data-manual]'); if (first) first.click(); } if (e.key === 'Escape') clearSearch(); });
@@ -1180,7 +1296,7 @@
       ctx.clearRect(0, 0, S, S); ctx.fillStyle = bg; ctx.fillRect(0, 0, S, S);
       ctx.strokeStyle = line; ctx.lineWidth = 3; ctx.strokeRect(14, 14, S - 28, S - 28);
       ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.font = '600 58px "SF Mono", Menlo, monospace'; ctx.fillText('MY GARDEN', 66, 106);
-      ctx.font = '22px "SF Mono", Menlo, monospace'; ctx.fillStyle = sub; ctx.fillText('SPRINKLED WITH ' + (Math.max(0, +$('amount').value || 0)) + ' XTZ', 68, 144);
+      ctx.font = '22px "SF Mono", Menlo, monospace'; ctx.fillStyle = sub; ctx.fillText('WATERED WITH ' + (Math.max(0, +$('amount').value || 0)) + ' XTZ', 68, 144);
       if (!full()) return;
       const av = 210, colGap = 40, rowStride = 264, startX = (S - (av * 3 + colGap * 2)) / 2, startY = 190;
       displayOrder().forEach((origIdx, i) => { const c = creators[origIdx]; const col = i % 3, row = Math.floor(i / 3), x = startX + col * (av + colGap), y = startY + row * rowStride; drawAvatar(ctx, c.id, x, y, av); ctx.fillStyle = ink; ctx.font = '600 22px "SF Mono", Menlo, monospace'; ctx.textAlign = 'center'; let nm = c.name; if (nm.length > 15) nm = nm.slice(0, 14) + '…'; ctx.fillText(nm, x + av / 2, y + av + 30); });
@@ -1190,16 +1306,30 @@
     window._rg = renderGarden;
 
     /* overlay flow */
-    const SHARE_TEXT = 'sprinkling my nine on tezos 🌱 my garden, watered.';
+    const SHARE_TEXT = '9 creators. 1 pot. zero spreadsheets. 🌱';
+    let walletConnected = false;
+    const WALLET_ADDR = 'tz1qsprk…k4x9';
+    function renderWalletState() {
+      if (walletConnected) {
+        $('walletK').textContent = 'From';
+        $('walletVal').textContent = WALLET_ADDR;
+        $('confirmBtn').disabled = false;
+      } else {
+        $('walletK').textContent = 'Wallet';
+        $('walletVal').innerHTML = '<button class="btn ghost wc-btn" id="connectBtn">connect wallet</button>';
+        $('connectBtn').onclick = () => { walletConnected = true; renderWalletState(); };
+        $('confirmBtn').disabled = true;
+      }
+    }
     function openOverlay() {
       if (!full()) return;
       const pot = Math.max(0, +$('amount').value || 0), split = computeSplit();
-      $('fromWallet').textContent = 'tz1qsprk…k4x9';
-      $('rcptAmt').textContent = pot + ' ꜩ';
-      $('confirmBtn').textContent = 'sprinkle ' + pot + ' ꜩ';
+      renderWalletState();
+      $('rcptAmt').textContent = pot + ' XTZ';
+      $('confirmBtn').textContent = 'sprinkle ' + pot + ' XTZ';
       const idx = creators.map((c, i) => i);
       const maxPc = Math.max(...split, 0.0001);
-      let rows = ''; idx.forEach(i => { const c = creators[i]; rows += `<tr><td><img class="av" src="${avatarSVG(c.id)}" alt="">${c.name}</td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} ꜩ</td></tr>`; });
+      let rows = ''; idx.forEach(i => { const c = creators[i]; rows += `<tr><td><img class="av" src="${avatarSVG(c.id)}" alt="">${c.name}</td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
       $('confirmTable').innerHTML = rows;
       $('confirmPane').style.display = ''; $('successPane').style.display = 'none';
       $('overlay').classList.add('show');
@@ -1207,7 +1337,7 @@
     function doSprinkle() {
       const pot = Math.max(0, +$('amount').value || 0);
       lastHash = 'oo' + Array.from({ length: 48 }, () => '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[Math.floor(Math.random() * 57)]).join('');
-      $('successLead').textContent = pot + ' ꜩ poured across 9.';
+      $('successLead').textContent = pot + ' XTZ, sprinkled across nine.';
       $('shareText').textContent = SHARE_TEXT;
       $('confirmPane').style.display = 'none'; $('successPane').style.display = '';
       renderGarden();
@@ -1226,6 +1356,13 @@
 
     /* temporary: fill 9 for testing */
     $('fillTest').onclick = () => { creators = PRESETS.slice(0, 9).map(p => { const c = makeCreator(p.handle); c.name = p.name; return c; }); renderAll(); };
+
+    /* pot presets */
+    /* pot presets */
+    function syncPresets() { const v = $('amount').value; document.querySelectorAll('#presets .preset').forEach(b => b.classList.toggle('sel', b.dataset.amt === v)); }
+    document.querySelectorAll('#presets .preset').forEach(b => b.onclick = () => { $('amount').value = b.dataset.amt; renderGrid(); syncPresets(); });
+    $('amount').addEventListener('input', syncPresets);
+    syncPresets();
 
     /* Photos-style Drag and Drop */
     (function () {
