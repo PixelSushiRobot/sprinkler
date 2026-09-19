@@ -878,6 +878,19 @@
       flex: none
     }
 
+    .rcpt-who {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.25;
+      min-width: 0
+    }
+
+    .rcpt-addr {
+      font-size: 9px;
+      letter-spacing: .04em;
+      color: var(--dim)
+    }
+
     .ov-table .bar-cell {
       width: 32%;
       padding: 0 10px
@@ -1225,6 +1238,12 @@
           if (Array.isArray(d) && d[0] && d[0].address) c.addr = d[0].address;
           else throw new Error('name not found');
         }
+        // reject a second entry that resolves to an address already in the list
+        // (e.g. someone added once as alice.tez and once as her tz1… address)
+        if (creators.some(x => x !== c && x.addr && x.addr === c.addr)) {
+          c._err = 'duplicate'; c._loading = false;
+          renderAll(); syncConfirmReady(); return;
+        }
         const acc = await fetchJSON(`${TZKT}/v1/accounts/${c.addr}`);
         const tx = (acc && acc.numTransactions) || 0;
         c.activity = clampN(Math.log10(tx + 1) / 4 * 100, 3, 100);
@@ -1476,7 +1495,9 @@
         $('walletK').textContent = 'From';
         $('walletVal').textContent = shortAddr(walletAddr);
         $('confirmBtn').disabled = !ready;
-        note.textContent = ready ? 'Your wallet has the final say.' : 'Resolving addresses — one moment.';
+        note.textContent = ready ? 'Your wallet has the final say.'
+          : creators.some(c => c._err) ? 'Remove the flagged recipient to continue.'
+            : 'Resolving addresses — one moment.';
       } else {
         $('walletK').textContent = 'Wallet';
         $('walletVal').innerHTML = '<button class="btn ghost wc-btn" id="connectBtn">connect wallet</button>';
@@ -1514,7 +1535,7 @@
       $('confirmBtn').textContent = 'sprinkle ' + pot + ' XTZ';
       const idx = creators.map((c, i) => i);
       const maxPc = Math.max(...split, 0.0001);
-      let rows = ''; idx.forEach(i => { const c = creators[i]; rows += `<tr><td><img class="av" src="${c.avatar || avatarSVG(c.id)}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt="">${c.name}</td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
+      let rows = ''; idx.forEach(i => { const c = creators[i]; rows += `<tr><td><img class="av" src="${c.avatar || avatarSVG(c.id)}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="rcpt-who"><span class="rcpt-name">${c.name}</span><span class="rcpt-addr">${shortAddr(c.addr)}</span></div></td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
       $('confirmTable').innerHTML = rows;
       $('confirmPane').style.display = ''; $('successPane').style.display = 'none';
       $('overlay').classList.add('show');
