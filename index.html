@@ -1203,7 +1203,7 @@
     function makeCreator(input) {
       input = input.trim();
       const isAddr = /^(tz1|tz2|tz3|KT1)[1-9A-HJ-NP-Za-km-z]{33}$/.test(input);
-      const isName = /^[a-z0-9][a-z0-9-]{1,30}\.tez$/i.test(input);
+      const isName = /^([a-z0-9][a-z0-9-]{0,62}\.)+tez$/i.test(input);
       if (!isAddr && !isName) return null;
       const seed = input.toLowerCase();
       return {
@@ -1380,7 +1380,10 @@
       let html = '';
       items.slice(0, 6).forEach(p => { html += `<div class="ritem" data-h="${p.handle}" data-n="${p.name}"><img class="av" src="${avatarSVG(p.handle)}" alt=""><div class="info"><div class="rn">${p.name}</div><div class="rs">${(p.src || ['teztree']).join(' · ')}</div></div></div>`; });
       const c = makeCreator(q);
-      if (c && !creators.some(x => x.id === c.id)) html += `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">manual · resolves onchain</div></div></div>`;
+      if (c) {
+        if (creators.some(x => x.id === c.id)) html += `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${c.name}</div><div class="rs" style="color:var(--dim)">already in your nine</div></div></div>`;
+        else html += `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">manual · resolves onchain</div></div></div>`;
+      }
       if (!html) html = `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">no matches — paste a tz1… or a .tez name</div></div></div>`;
       box.innerHTML = html; box.classList.add('show');
       box.querySelectorAll('.ritem[data-h]').forEach(el => el.onclick = () => { addPreset({ name: el.dataset.n, handle: el.dataset.h }); clearSearch(); });
