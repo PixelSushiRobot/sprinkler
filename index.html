@@ -1422,7 +1422,13 @@
     const shortAddr = a => a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
     function recipientsReady() { return creators.length === 9 && creators.every(c => c.addr && !c._loading && !c._err); }
     function syncConfirmReady() { if ($('overlay').classList.contains('show')) renderWalletState(); }
-    function whenTezReady() { return window.tez ? Promise.resolve() : new Promise(res => window.addEventListener('tez-ready', () => res(), { once: true })); }
+    function whenTezReady() {
+      if (window.tez || window.tezError) return Promise.resolve();
+      return new Promise(res => {
+        const t = setTimeout(res, 12000);
+        window.addEventListener('tez-ready', () => { clearTimeout(t); res(); }, { once: true });
+      });
+    }
 
     function renderWalletState() {
       const ready = recipientsReady(), note = $('confirmNote');
@@ -1442,8 +1448,16 @@
 
     async function doConnect() {
       const btn = $('connectBtn'); if (btn) { btn.disabled = true; btn.textContent = 'connecting…'; }
-      try { await whenTezReady(); walletAddr = await window.tez.connect(); }
-      catch (e) { if (btn) { btn.disabled = false; btn.textContent = 'connect wallet'; } $('sprinkleErr').textContent = 'wallet connection cancelled'; return; }
+      try {
+        await whenTezReady();
+        if (!window.tez) throw new Error(window.tezError || 'wallet library did not load');
+        walletAddr = await window.tez.connect();
+      } catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'connect wallet'; }
+        const m = (e && e.message) || '';
+        $('sprinkleErr').textContent = /load|unavailable|library/i.test(m) ? "wallet library didn't load — hard-refresh and try again" : 'wallet connection cancelled';
+        return;
+      }
       $('sprinkleErr').textContent = '';
       renderWalletState();
     }
@@ -1501,7 +1515,7 @@
     function closeOverlay() { $('overlay').classList.remove('show'); }
     $('sprinkleBtn').onclick = openOverlay;
     $('confirmBtn').onclick = doSprinkle;
-    whenTezReady().then(async () => { try { walletAddr = await window.tez.getActive(); syncConfirmReady(); } catch (e) { } });
+    whenTezReady().then(async () => { try { if (window.tez) { walletAddr = await window.tez.getActive(); syncConfirmReady(); } } catch (e) { } });
     $('ovClose').onclick = closeOverlay;
     $('overlay').addEventListener('click', e => { if (e.target === $('overlay')) closeOverlay(); });
     $('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT), '_blank');
@@ -1631,41 +1645,46 @@
     renderAll();
   </script>
 
-  <!-- Tezos wallet + batch payout (Beacon + Taquito, loaded from CDN, no build step) -->
+  <!-- Tezos wallet + batch payout (Beacon + Taquito, bundled from CDN, no build step) -->
   <script type="module">
-    import { TezosToolkit, OpKind } from 'https://esm.sh/@taquito/taquito@21';
-    import { BeaconWallet } from 'https://esm.sh/@taquito/beacon-wallet@21';
-
     const CFG = window.SPRINKLER_CFG;
-    const NET = { type: CFG.network, name: CFG.networkName, rpcUrl: CFG.rpc };
-    const Tezos = new TezosToolkit(CFG.rpc);
-    const wallet = new BeaconWallet({ name: 'Sprinkler', network: NET });
-    Tezos.setWalletProvider(wallet);
+    try {
+      const { TezosToolkit, OpKind } = await import('https://cdn.jsdelivr.net/npm/@taquito/taquito@21/+esm');
+      const { BeaconWallet } = await import('https://cdn.jsdelivr.net/npm/@taquito/beacon-wallet@21/+esm');
+      const NET = { type: CFG.network, name: CFG.networkName, rpcUrl: CFG.rpc };
+      const Tezos = new TezosToolkit(CFG.rpc);
+      const wallet = new BeaconWallet({ name: 'Sprinkler', network: NET });
+      Tezos.setWalletProvider(wallet);
 
-    window.tez = {
-      // returns the connected address, prompting the wallet if needed
-      async connect() {
-        const active = await wallet.client.getActiveAccount();
-        if (!active) await wallet.requestPermissions({ network: NET });
-        return wallet.getPKH();
-      },
-      // returns the already-connected address, or null
-      async getActive() {
-        const a = await wallet.client.getActiveAccount();
-        return a ? a.address : null;
-      },
-      async disconnect() { await wallet.clearActiveAccount(); },
-      // recipients: [{ addr, mutez }] — sends one batched operation, returns the op hash
-      async sprinkle(recipients) {
-        const batch = Tezos.wallet.batch(
-          recipients.map(r => ({ kind: OpKind.TRANSACTION, to: r.addr, amount: r.mutez, mutez: true }))
-        );
-        const op = await batch.send();
-        await op.confirmation();
-        return op.opHash;
-      }
-    };
-    window.dispatchEvent(new Event('tez-ready'));
+      window.tez = {
+        // returns the connected address, prompting the wallet if needed
+        async connect() {
+          const active = await wallet.client.getActiveAccount();
+          if (!active) await wallet.requestPermissions({ network: NET });
+          return wallet.getPKH();
+        },
+        // returns the already-connected address, or null
+        async getActive() {
+          const a = await wallet.client.getActiveAccount();
+          return a ? a.address : null;
+        },
+        async disconnect() { await wallet.clearActiveAccount(); },
+        // recipients: [{ addr, mutez }] — sends one batched operation, returns the op hash
+        async sprinkle(recipients) {
+          const batch = Tezos.wallet.batch(
+            recipients.map(r => ({ kind: OpKind.TRANSACTION, to: r.addr, amount: r.mutez, mutez: true }))
+          );
+          const op = await batch.send();
+          await op.confirmation();
+          return op.opHash;
+        }
+      };
+    } catch (e) {
+      window.tezError = (e && e.message) || 'wallet library failed to load';
+      console.error('[sprinkler] wallet load failed:', e);
+    } finally {
+      window.dispatchEvent(new Event('tez-ready'));
+    }
   </script>
 </body>
 
