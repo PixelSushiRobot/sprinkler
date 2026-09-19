@@ -1645,38 +1645,38 @@
     renderAll();
   </script>
 
-  <!-- Tezos wallet + batch payout (Beacon + Taquito, bundled from CDN, no build step) -->
+  <!-- Tezos wallet connect + batch payout via Octez Connect (tzip-10). Wallet forges + signs; no Taquito, no build step. -->
   <script type="module">
     const CFG = window.SPRINKLER_CFG;
     try {
-      const { TezosToolkit, OpKind } = await import('https://cdn.jsdelivr.net/npm/@taquito/taquito@21/+esm');
-      const { BeaconWallet } = await import('https://cdn.jsdelivr.net/npm/@taquito/beacon-wallet@21/+esm');
+      const { DAppClient } = await import('https://esm.sh/@tezos-x/octez.connect-sdk@5?bundle');
       const NET = { type: CFG.network, name: CFG.networkName, rpcUrl: CFG.rpc };
-      const Tezos = new TezosToolkit(CFG.rpc);
-      const wallet = new BeaconWallet({ name: 'Sprinkler', network: NET });
-      Tezos.setWalletProvider(wallet);
+      const client = new DAppClient({ name: 'Sprinkler', network: NET });
 
       window.tez = {
         // returns the connected address, prompting the wallet if needed
         async connect() {
-          const active = await wallet.client.getActiveAccount();
-          if (!active) await wallet.requestPermissions({ network: NET });
-          return wallet.getPKH();
+          const active = await client.getActiveAccount();
+          if (!active) await client.requestPermissions({ network: NET });
+          const acc = await client.getActiveAccount();
+          return acc ? acc.address : null;
         },
         // returns the already-connected address, or null
         async getActive() {
-          const a = await wallet.client.getActiveAccount();
+          const a = await client.getActiveAccount();
           return a ? a.address : null;
         },
-        async disconnect() { await wallet.clearActiveAccount(); },
-        // recipients: [{ addr, mutez }] — sends one batched operation, returns the op hash
+        async disconnect() { await client.clearActiveAccount(); },
+        // recipients: [{ addr, mutez }] — one batched operation; the wallet forges + signs
         async sprinkle(recipients) {
-          const batch = Tezos.wallet.batch(
-            recipients.map(r => ({ kind: OpKind.TRANSACTION, to: r.addr, amount: r.mutez, mutez: true }))
-          );
-          const op = await batch.send();
-          await op.confirmation();
-          return op.opHash;
+          const res = await client.requestOperation({
+            operationDetails: recipients.map(r => ({
+              kind: 'transaction',
+              destination: r.addr,
+              amount: String(r.mutez)   // mutez, as a string
+            }))
+          });
+          return res.transactionHash || res.opHash || (res.transactionHashes && res.transactionHashes[0]) || '';
         }
       };
     } catch (e) {
