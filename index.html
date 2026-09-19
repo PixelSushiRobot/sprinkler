@@ -1480,7 +1480,10 @@
       } catch (e) {
         if (btn) { btn.disabled = false; btn.textContent = 'connect wallet'; }
         const m = (e && e.message) || '';
-        $('sprinkleErr').textContent = /load|unavailable|library/i.test(m) ? "wallet library didn't load — hard-refresh and try again" : 'wallet connection cancelled';
+        console.error('[sprinkler] connect failed:', e);
+        if (/load|unavailable|library/i.test(m)) $('sprinkleErr').textContent = "wallet library didn't load — hard-refresh and try again";
+        else if (e && (e.errorType === 'ABORTED_ERROR' || /abort|cancel|closed the modal/i.test(m))) $('sprinkleErr').textContent = 'connection cancelled — try again';
+        else $('sprinkleErr').textContent = 'wallet error: ' + (m || 'unknown — see console');
         return;
       }
       $('sprinkleErr').textContent = '';
@@ -1541,6 +1544,7 @@
     $('sprinkleBtn').onclick = openOverlay;
     $('confirmBtn').onclick = doSprinkle;
     whenTezReady().then(async () => { try { if (window.tez) { walletAddr = await window.tez.getActive(); syncConfirmReady(); } } catch (e) { } });
+    window.addEventListener('tez-account', e => { walletAddr = e.detail || null; syncConfirmReady(); });
     $('ovClose').onclick = closeOverlay;
     $('overlay').addEventListener('click', e => { if (e.target === $('overlay')) closeOverlay(); });
     $('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT), '_blank');
@@ -1677,12 +1681,17 @@
       const { DAppClient } = await import('https://esm.sh/@tezos-x/octez.connect-sdk@5?bundle');
       const NET = { type: CFG.network, name: CFG.networkName, rpcUrl: CFG.rpc };
       const client = new DAppClient({ name: 'Sprinkler', network: NET });
+      // React to account changes (connect, switch, disconnect) — octez.connect
+      // warns if this isn't subscribed. Bridge it to the app via a window event.
+      client.subscribeToEvent('ACTIVE_ACCOUNT_SET', (account) => {
+        window.dispatchEvent(new CustomEvent('tez-account', { detail: (account && account.address) || null }));
+      });
 
       window.tez = {
         // returns the connected address, prompting the wallet if needed
         async connect() {
           const active = await client.getActiveAccount();
-          if (!active) await client.requestPermissions({ network: NET });
+          if (!active) await client.requestPermissions();   // network is set on the client
           const acc = await client.getActiveAccount();
           return acc ? acc.address : null;
         },
