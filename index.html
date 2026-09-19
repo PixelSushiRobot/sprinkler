@@ -905,6 +905,40 @@
       text-align: center
     }
 
+    .note.err {
+      color: #c0392b;
+      margin-top: 6px
+    }
+
+    .note.err:empty {
+      display: none
+    }
+
+    .txlink {
+      display: inline-block;
+      margin: 2px 0 12px;
+      font-size: 10.5px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted)
+    }
+
+    .txlink:hover {
+      color: var(--ink)
+    }
+
+    .nm-sub {
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-top: 1px
+    }
+
+    .nm-sub.err {
+      color: #c0392b
+    }
+
     #successPane {
       text-align: center
     }
@@ -1107,12 +1141,14 @@
           </div>
           <table class="ov-table" id="confirmTable"></table>
           <button class="btn" id="confirmBtn" style="width:100%" disabled>sprinkle 1000 XTZ</button>
-          <p class="note">Your wallet has the final say.</p>
+          <p class="note" id="confirmNote">Your wallet has the final say.</p>
+          <p class="note err" id="sprinkleErr"></p>
         </div>
         <div id="successPane" style="display:none">
           <canvas id="gardenCanvas" width="1080" height="1080"></canvas>
           <div class="success-head">Garden watered ✓</div>
           <p class="ov-lead" id="successLead"></p>
+          <a class="txlink" id="txLink" target="_blank" rel="noopener">view on tzkt ↗</a>
           <div class="share-label">Share your garden</div>
           <div class="share-box" id="shareText"></div>
           <button class="btn" id="shareX" style="width:100%">Share on X</button>
@@ -1126,13 +1162,21 @@
       </div>
     </div>
 
-    <span class="foot">made with Sprinkler · a prototype · nothing leaves your device
-      <span class="sub2">search + avatars resolve live via objkt, TzKT, hacktez &amp; TezTree when hosted (blocked in
-        this preview sandbox)</span>
+    <span class="foot">made with Sprinkler · on Ghostnet for now · your wallet signs, we never hold the funds
+      <span class="sub2">names &amp; avatars resolve live via TzKT &amp; objkt · one batched payout, straight from your wallet</span>
     </span>
 
   </div>
 
+  <script>
+    /* ── network config ─ flip these four to go mainnet ─────────────── */
+    window.SPRINKLER_CFG = {
+      network: 'ghostnet',
+      rpc: 'https://ghostnet.ecadinfra.com',
+      tzkt: 'https://api.ghostnet.tzkt.io',
+      explorer: 'https://ghostnet.tzkt.io'
+    };
+  </script>
   <script>
     /* theme */
     (function initTheme() {
@@ -1150,7 +1194,67 @@
     function drawAvatar(ctx, seed, x, y, size) { const d = avatarData(seed), cell = size / 5; ctx.fillStyle = d.bg; ctx.fillRect(x, y, size, size); ctx.fillStyle = d.fg; for (let gy = 0; gy < 5; gy++)for (let gx = 0; gx < 5; gx++)if (d.cells[gy][gx]) ctx.fillRect(x + gx * cell, y + gy * cell, cell + 0.5, cell + 0.5); }
 
     /* model */
-    function makeCreator(input) { input = input.trim(); const isAddr = /^(tz1|tz2|tz3|KT1)[1-9A-HJ-NP-Za-km-z]{33}$/.test(input); const isName = /^[a-z0-9][a-z0-9-]{1,30}\.(tez|gho)$/i.test(input); if (!isAddr && !isName) return null; const seed = input.toLowerCase(); const s = rngFrom('st:' + seed); const name = isName ? input.toLowerCase() : input.slice(0, 6) + '…' + input.slice(-4); const addr = isAddr ? input : ('tz1' + seed.replace(/[^a-z0-9]/g, '') + 'demo').padEnd(36, 'x').slice(0, 36); return { id: seed, name, addr, activity: Math.floor(s() * 88) + 12, received: Math.floor(s() * 88) + 12, _yolo: Math.random(), _isJackpotWinner: false }; }
+    const TZKT = window.SPRINKLER_CFG.tzkt;
+    const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const ipfsURL = u => !u ? null : (u.startsWith('ipfs://') ? 'https://ipfs.io/ipfs/' + u.slice(7) : u);
+    async function fetchJSON(url, opts) { const r = await fetch(url, opts); if (!r.ok) throw new Error('http ' + r.status); return r.json(); }
+
+    function makeCreator(input) {
+      input = input.trim();
+      const isAddr = /^(tz1|tz2|tz3|KT1)[1-9A-HJ-NP-Za-km-z]{33}$/.test(input);
+      const isName = /^[a-z0-9][a-z0-9-]{1,30}\.tez$/i.test(input);
+      if (!isAddr && !isName) return null;
+      const seed = input.toLowerCase();
+      return {
+        id: seed,
+        name: isName ? seed : input.slice(0, 6) + '…' + input.slice(-4),
+        addr: isAddr ? input : null,        // .tez names resolve asynchronously
+        avatar: null,
+        activity: 50, received: 50,          // neutral until enriched from TzKT
+        _yolo: Math.random(), _isJackpotWinner: false,
+        _input: input, _isAddr: isAddr, _loading: true, _err: null
+      };
+    }
+
+    /* resolve address / .tez name, pull activity + balance, real avatar */
+    async function enrichCreator(c) {
+      try {
+        if (!c.addr) {
+          const d = await fetchJSON(`${TZKT}/v1/domains?name=${encodeURIComponent(c._input.toLowerCase())}`);
+          if (Array.isArray(d) && d[0] && d[0].address) c.addr = d[0].address;
+          else throw new Error('name not found');
+        }
+        const acc = await fetchJSON(`${TZKT}/v1/accounts/${c.addr}`);
+        const tx = (acc && acc.numTransactions) || 0;
+        c.activity = clampN(Math.log10(tx + 1) / 4 * 100, 3, 100);
+        const balTez = ((acc && acc.balance) || 0) / 1e6;
+        c.received = clampN(Math.log10(balTez + 1) / 6 * 100, 3, 100);
+        if (c._isAddr) {
+          const rev = await fetchJSON(`${TZKT}/v1/domains?address=${c.addr}&limit=1`).catch(() => null);
+          if (Array.isArray(rev) && rev[0] && rev[0].name) c.name = rev[0].name;
+          else if (acc && acc.alias) c.name = acc.alias;
+        }
+        c.avatar = await resolveAvatar(c.addr);
+        c._loading = false;
+      } catch (e) {
+        c._loading = false; c._err = 'not found';
+      }
+      renderAll(); syncConfirmReady();
+    }
+
+    /* best-effort avatar from objkt (mainnet catalog; falls back to identicon) */
+    async function resolveAvatar(addr) {
+      try {
+        const r = await fetch('https://data.objkt.com/v3/graphql', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ query: 'query($a:String!){holder(where:{address:{_eq:$a}}){logo}}', variables: { a: addr } })
+        });
+        const j = await r.json();
+        const h = j && j.data && j.data.holder && j.data.holder[0];
+        if (h && h.logo) return ipfsURL(h.logo);
+      } catch (e) { }
+      return null;
+    }
     const PRESETS = [
       { name: 'TEIA DAO Treasury', handle: 'teiadao.tez', src: ['objkt', 'tzkt'] },
       { name: 'TheTezosCommunity', handle: 'thetezoscommunity.tez', src: ['objkt', 'teztree'] },
@@ -1245,7 +1349,8 @@
           numHtml = `<div class="num"><span class="tz">${(pot * pc / 100).toFixed(1)} XTZ</span></div>`;
         }
 
-        t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${avatarSVG(c.id)}" alt=""><div class="nm">${c.name}</div>${numHtml}`;
+        const statusHtml = c._loading ? '<div class="nm-sub">resolving…</div>' : (c._err ? '<div class="nm-sub err">' + c._err + '</div>' : '');
+        t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${c.avatar || avatarSVG(c.id)}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="nm">${c.name}</div>${statusHtml}${numHtml}`;
         t.dataset.id = c.id;
         t.querySelector('.x').onclick = e => { e.stopPropagation(); creators.splice(origIdx, 1); renderAll(); };
         g.appendChild(t);
@@ -1281,8 +1386,8 @@
       box.querySelectorAll('.ritem[data-manual]').forEach(el => el.onclick = () => { addCreator(el.dataset.manual); clearSearch(); });
     }
     function clearSearch() { $('search').value = ''; $('results').classList.remove('show'); $('results').innerHTML = ''; }
-    function addCreator(v) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(v); if (!c) { $('addErr').textContent = "not a tz address or a .tez name"; return; } if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; } creators.push(c); renderAll(); }
-    function addPreset(p) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(p.handle); if (!c) return; c.name = p.name; if (creators.some(x => x.id === c.id)) return; creators.push(c); renderAll(); }
+    function addCreator(v) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(v); if (!c) { $('addErr').textContent = "not a tz address or a .tez name"; return; } if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; } creators.push(c); renderAll(); enrichCreator(c); }
+    function addPreset(p) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(p.handle); if (!c) return; c.name = p.name; if (creators.some(x => x.id === c.id)) return; creators.push(c); renderAll(); enrichCreator(c); }
 
     $('search').addEventListener('input', e => renderResults(e.target.value));
     $('search').addEventListener('keydown', e => { if (e.key === 'Enter') { const first = $('results').querySelector('.ritem[data-h],.ritem[data-manual]'); if (first) first.click(); } if (e.key === 'Escape') clearSearch(); });
@@ -1307,37 +1412,81 @@
 
     /* overlay flow */
     const SHARE_TEXT = '9 creators. 1 pot. zero spreadsheets. 🌱';
-    let walletConnected = false;
-    const WALLET_ADDR = 'tz1qsprk…k4x9';
+    const EXPLORER = window.SPRINKLER_CFG.explorer;
+    let walletAddr = null;
+
+    const shortAddr = a => a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
+    function recipientsReady() { return creators.length === 9 && creators.every(c => c.addr && !c._loading && !c._err); }
+    function syncConfirmReady() { if ($('overlay').classList.contains('show')) renderWalletState(); }
+    function whenTezReady() { return window.tez ? Promise.resolve() : new Promise(res => window.addEventListener('tez-ready', () => res(), { once: true })); }
+
     function renderWalletState() {
-      if (walletConnected) {
+      const ready = recipientsReady(), note = $('confirmNote');
+      if (walletAddr) {
         $('walletK').textContent = 'From';
-        $('walletVal').textContent = WALLET_ADDR;
-        $('confirmBtn').disabled = false;
+        $('walletVal').textContent = shortAddr(walletAddr);
+        $('confirmBtn').disabled = !ready;
+        note.textContent = ready ? 'Your wallet has the final say.' : 'Resolving addresses — one moment.';
       } else {
         $('walletK').textContent = 'Wallet';
         $('walletVal').innerHTML = '<button class="btn ghost wc-btn" id="connectBtn">connect wallet</button>';
-        $('connectBtn').onclick = () => { walletConnected = true; renderWalletState(); };
+        $('connectBtn').onclick = doConnect;
         $('confirmBtn').disabled = true;
+        note.textContent = 'Connect a Tezos wallet to sprinkle.';
       }
     }
+
+    async function doConnect() {
+      const btn = $('connectBtn'); if (btn) { btn.disabled = true; btn.textContent = 'connecting…'; }
+      try { await whenTezReady(); walletAddr = await window.tez.connect(); }
+      catch (e) { if (btn) { btn.disabled = false; btn.textContent = 'connect wallet'; } $('sprinkleErr').textContent = 'wallet connection cancelled'; return; }
+      $('sprinkleErr').textContent = '';
+      renderWalletState();
+    }
+
     function openOverlay() {
       if (!full()) return;
       const pot = Math.max(0, +$('amount').value || 0), split = computeSplit();
+      $('sprinkleErr').textContent = '';
       renderWalletState();
       $('rcptAmt').textContent = pot + ' XTZ';
       $('confirmBtn').textContent = 'sprinkle ' + pot + ' XTZ';
       const idx = creators.map((c, i) => i);
       const maxPc = Math.max(...split, 0.0001);
-      let rows = ''; idx.forEach(i => { const c = creators[i]; rows += `<tr><td><img class="av" src="${avatarSVG(c.id)}" alt="">${c.name}</td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
+      let rows = ''; idx.forEach(i => { const c = creators[i]; rows += `<tr><td><img class="av" src="${c.avatar || avatarSVG(c.id)}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt="">${c.name}</td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
       $('confirmTable').innerHTML = rows;
       $('confirmPane').style.display = ''; $('successPane').style.display = 'none';
       $('overlay').classList.add('show');
     }
-    function doSprinkle() {
-      const pot = Math.max(0, +$('amount').value || 0);
-      lastHash = 'oo' + Array.from({ length: 48 }, () => '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[Math.floor(Math.random() * 57)]).join('');
+
+    /* split the pot into exact-summing mutez amounts (no dust, no rounding drift) */
+    function payoutMutez(pot, split) {
+      const total = Math.round(pot * 1e6);
+      const raw = split.map(pc => Math.floor(total * pc / 100));
+      let rem = total - raw.reduce((a, b) => a + b, 0);
+      const order = split.map((pc, i) => i).sort((a, b) => split[b] - split[a]);
+      for (let k = 0; rem > 0; k++, rem--) raw[order[k % raw.length]] += 1;
+      return raw;
+    }
+
+    async function doSprinkle() {
+      if (!recipientsReady() || !walletAddr) return;
+      const pot = Math.max(0, +$('amount').value || 0), split = computeSplit();
+      const amounts = payoutMutez(pot, split);
+      const recipients = creators.map((c, i) => ({ addr: c.addr, mutez: amounts[i] }));
+      const btn = $('confirmBtn'), label = btn.textContent;
+      btn.disabled = true; btn.textContent = 'confirm in your wallet…'; $('sprinkleErr').textContent = '';
+      let hash;
+      try { hash = await window.tez.sprinkle(recipients); }
+      catch (e) {
+        btn.disabled = false; btn.textContent = label;
+        const m = (e && e.message) || '';
+        $('sprinkleErr').textContent = /abort|reject|cancel/i.test(m) ? 'you cancelled the transaction' : 'transaction failed — check your balance and try again';
+        return;
+      }
+      lastHash = hash;
       $('successLead').textContent = pot + ' XTZ, sprinkled across nine.';
+      $('txLink').href = EXPLORER + '/' + hash;
       $('shareText').textContent = SHARE_TEXT;
       $('confirmPane').style.display = 'none'; $('successPane').style.display = '';
       renderGarden();
@@ -1348,6 +1497,7 @@
     function closeOverlay() { $('overlay').classList.remove('show'); }
     $('sprinkleBtn').onclick = openOverlay;
     $('confirmBtn').onclick = doSprinkle;
+    whenTezReady().then(async () => { try { walletAddr = await window.tez.getActive(); syncConfirmReady(); } catch (e) { } });
     $('ovClose').onclick = closeOverlay;
     $('overlay').addEventListener('click', e => { if (e.target === $('overlay')) closeOverlay(); });
     $('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT), '_blank');
@@ -1355,7 +1505,7 @@
     $('dlBtn').onclick = () => { const a = document.createElement('a'); a.download = 'my-garden.png'; a.href = $('gardenCanvas').toDataURL('image/png'); a.click(); };
 
     /* temporary: fill 9 for testing */
-    $('fillTest').onclick = () => { creators = PRESETS.slice(0, 9).map(p => { const c = makeCreator(p.handle); c.name = p.name; return c; }); renderAll(); };
+    $('fillTest').onclick = () => { creators = PRESETS.slice(0, 9).map(p => { const c = makeCreator(p.handle); c.name = p.name; return c; }); renderAll(); creators.forEach(c => enrichCreator(c)); };
 
     /* pot presets */
     /* pot presets */
@@ -1475,6 +1625,42 @@
     window.addEventListener('resize', () => layoutNums());
 
     renderAll();
+  </script>
+
+  <!-- Tezos wallet + batch payout (Beacon + Taquito, loaded from CDN, no build step) -->
+  <script type="module">
+    import { TezosToolkit, OpKind } from 'https://esm.sh/@taquito/taquito@21';
+    import { BeaconWallet } from 'https://esm.sh/@taquito/beacon-wallet@21';
+
+    const CFG = window.SPRINKLER_CFG;
+    const Tezos = new TezosToolkit(CFG.rpc);
+    const wallet = new BeaconWallet({ name: 'Sprinkler', network: { type: CFG.network } });
+    Tezos.setWalletProvider(wallet);
+
+    window.tez = {
+      // returns the connected address, prompting the wallet if needed
+      async connect() {
+        const active = await wallet.client.getActiveAccount();
+        if (!active) await wallet.requestPermissions({ network: { type: CFG.network } });
+        return wallet.getPKH();
+      },
+      // returns the already-connected address, or null
+      async getActive() {
+        const a = await wallet.client.getActiveAccount();
+        return a ? a.address : null;
+      },
+      async disconnect() { await wallet.clearActiveAccount(); },
+      // recipients: [{ addr, mutez }] — sends one batched operation, returns the op hash
+      async sprinkle(recipients) {
+        const batch = Tezos.wallet.batch(
+          recipients.map(r => ({ kind: OpKind.TRANSACTION, to: r.addr, amount: r.mutez, mutez: true }))
+        );
+        const op = await batch.send();
+        await op.confirmation();
+        return op.opHash;
+      }
+    };
+    window.dispatchEvent(new Event('tez-ready'));
   </script>
 </body>
 
