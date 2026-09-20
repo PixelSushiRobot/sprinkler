@@ -5,6 +5,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sprinkler</title>
+  <!-- 1. The Main Icon -->
+  <link rel="icon" type="image/svg+xml" sizes="any" href="icon.svg">
+
+  <!-- 2. Google Search & Fallback (Using the resized 48x48 file) -->
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
+
+  <!-- 3. Apple Home Screen Icon (Using the resized 180x180 file) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <!-- 4. Android & PWA Manifest -->
+  <link rel="manifest" href="site.webmanifest">
+
   <style>
     :root,
     :root[data-theme="dark"] {
@@ -1116,7 +1128,8 @@
     <header>
       <div class="head-l">
         <h1>Sprinkler</h1>
-        <p class="sub">You know who you want to support but your math is not mathing. Just pick nine, choose a vibe, and let the Sprinkler sort it out.</p>
+        <p class="sub">You know who you want to support but your math is not mathing. Just pick nine, choose a vibe, and
+          let the Sprinkler sort it out.</p>
       </div>
       <div class="theme-toggle" id="themeToggle">
         <button class="th-btn" data-theme-choice="light" title="Light"><svg viewBox="0 0 24 24" fill="none"
@@ -1141,9 +1154,11 @@
       <div class="col col-left">
         <section class="box">
           <div class="phead"><span class="bn">01</span>Pick nine</div>
-          <p class="slead">Search a name, or paste a Tezos wallet — or paste a whole list at once. Nine is the number — enough to be a real garden, not just your two best friends.</p>
+          <p class="slead">Search a name, or paste a Tezos wallet — or paste a whole list at once. Nine is the number —
+            enough to be a real garden, not just your two best friends.</p>
           <div class="searchwrap">
-            <input id="search" placeholder="search a name, or paste a Tezos wallet" autocomplete="off" spellcheck="false">
+            <input id="search" placeholder="search a name, or paste a Tezos wallet" autocomplete="off"
+              spellcheck="false">
             <div class="results" id="results"></div>
           </div>
           <div class="err" id="addErr"></div>
@@ -1172,8 +1187,7 @@
 
       <div class="col col-right">
         <section class="box">
-          <div class="phead"><span class="bn">04</span>Your nine<span class="count"
-              id="count">0 / 9</span></div>
+          <div class="phead"><span class="bn">04</span>Your nine<span class="count" id="count">0 / 9</span></div>
           <div class="gridwrap">
             <div class="grid" id="grid"></div>
             <div class="numlayer" id="numlayer"></div>
@@ -1190,8 +1204,11 @@
         <div id="confirmPane">
           <h3>Ready to sprinkle?</h3>
           <div class="rcpt">
-            <div class="rcpt-row"><span class="k">Network</span><span class="v"><span class="nettog" id="netTog"><button type="button" data-net="shadownet">Shadownet · test</button><button type="button" data-net="mainnet">Mainnet · real</button></span></span></div>
-            <div class="rcpt-row" id="walletRow"><span class="k" id="walletK">Wallet</span><span class="v" id="walletVal"></span></div>
+            <div class="rcpt-row"><span class="k">Network</span><span class="v"><span class="nettog" id="netTog"><button
+                    type="button" data-net="shadownet">Shadownet · test</button><button type="button"
+                    data-net="mainnet">Mainnet · real</button></span></span></div>
+            <div class="rcpt-row" id="walletRow"><span class="k" id="walletK">Wallet</span><span class="v"
+                id="walletVal"></span></div>
             <div class="rcpt-row"><span class="k">Sprinkling</span><span class="v" id="rcptAmt">1000 XTZ</span></div>
             <div class="rcpt-row"><span class="k">Across</span><span class="v">9 creators · one transaction</span></div>
           </div>
@@ -1219,7 +1236,8 @@
     </div>
 
     <span class="foot">made with Sprinkler · <span id="netLabel"></span> · your wallet signs, we never hold the funds
-      <span class="sub2">names &amp; avatars resolve live via TzKT, objkt, hack.tez &amp; teztree · one batched payout, straight from your wallet</span>
+      <span class="sub2">names &amp; avatars resolve live via TzKT, objkt, hack.tez &amp; teztree · one batched payout,
+        straight from your wallet</span>
     </span>
 
   </div>
