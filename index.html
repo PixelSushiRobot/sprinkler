@@ -727,6 +727,16 @@
       margin-top: 1px
     }
 
+    .tile .num-dbg {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      font-size: 8.5px;
+      letter-spacing: .04em;
+      color: var(--dim);
+      margin-top: 2px
+    }
+
     .eslot {
       border: 1px dashed var(--line);
       min-height: 172px;
@@ -1287,8 +1297,10 @@
         }
         const acc = await fetchJSON(`${TZKT}/v1/accounts/${c.addr}`);
         const tx = (acc && acc.numTransactions) || 0;
+        c._tx = tx;                          // raw onchain tx count → Big Tree Energy
         c.activity = clampN(Math.log10(tx + 1) / 4 * 100, 3, 100);
         const balTez = ((acc && acc.balance) || 0) / 1e6;
+        c._balTez = balTez;                  // raw wallet balance (tez) → Save The Ants
         c.received = clampN(Math.log10(balTez + 1) / 6 * 100, 3, 100);
         if (c._isAddr && !c._named) {
           const rev = await fetchJSON(`${TZKT}/v1/domains?address=${c.addr}&limit=1`).catch(() => null);
@@ -1317,6 +1329,7 @@
       return null;
     }
     let creators = []; let method = 'equal'; let yoloLevel = 'wild'; let lastHash = '';
+    const SHOW_WEIGHTS = true;   // debug: print the metric driving each tile's share
 
     /* split math */
     function rawWeights() { switch (method) { case 'equal': return creators.map(() => 1); case 'boss': return creators.map((c, i) => Math.pow(0.78, i)); case 'tree': return creators.map(c => 0.12 + c.activity / 100); case 'ants': return creators.map(c => 0.12 + (1 - c.received / 100)); case 'yolo': { const P = yoloLevel === 'chill' ? 1.5 : yoloLevel === 'jackpot' ? 6 : 3.5; return creators.map(c => Math.pow(c._yolo, P) + 0.001); } } }
@@ -1396,8 +1409,20 @@
           numHtml = `<div class="num"><span class="tz">${(pot * pc / 100).toFixed(1)} XTZ</span></div>`;
         }
 
+        let dbgHtml = '';
+        if (on && SHOW_WEIGHTS && !c._loading && !c._err) {
+          const kfmt = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
+          let d = '';
+          if (method === 'tree') d = `${kfmt(c._tx || 0)} tx → activity ${Math.round(c.activity)}`;
+          else if (method === 'ants') d = `${(c._balTez || 0).toFixed(2)} XTZ → need ${Math.round(100 - c.received)}`;
+          else if (method === 'boss') d = `rank ${origIdx + 1} of ${creators.length}`;
+          else if (method === 'yolo') d = `roll ${c._yolo.toFixed(3)}`;
+          else if (method === 'equal') d = 'equal share';
+          if (d) dbgHtml = `<div class="num-dbg">${d}</div>`;
+        }
+
         const statusHtml = c._loading ? '<div class="nm-sub">resolving…</div>' : (c._err ? '<div class="nm-sub err">' + c._err + '</div>' : '');
-        t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${c.avatar || avatarSVG(c.id)}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="nm">${c.name}</div>${statusHtml}${numHtml}`;
+        t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${c.avatar || avatarSVG(c.id)}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="nm">${c.name}</div>${statusHtml}${numHtml}${dbgHtml}`;
         t.dataset.id = c.id;
         t.querySelector('.x').onclick = e => { e.stopPropagation(); creators.splice(origIdx, 1); renderAll(); };
         g.appendChild(t);
