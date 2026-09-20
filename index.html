@@ -1130,7 +1130,7 @@
 
       <div class="col col-right">
         <section class="box">
-          <div class="phead"><span class="bn">04</span>Your nine<button id="fillTest" class="testbtn">fill 9 · test</button><span class="count"
+          <div class="phead"><span class="bn">04</span>Your nine<span class="count"
               id="count">0 / 9</span></div>
           <div class="gridwrap">
             <div class="grid" id="grid"></div>
@@ -1176,7 +1176,7 @@
     </div>
 
     <span class="foot">made with Sprinkler · <span id="netLabel"></span> · your wallet signs, we never hold the funds
-      <span class="sub2">names &amp; avatars resolve live via TzKT &amp; objkt · one batched payout, straight from your wallet</span>
+      <span class="sub2">names &amp; avatars resolve live via TzKT, objkt, hack.tez &amp; teztree · one batched payout, straight from your wallet</span>
     </span>
 
   </div>
@@ -1254,7 +1254,7 @@
           if (Array.isArray(rev) && rev[0] && rev[0].name) c.name = rev[0].name;
           else if (acc && acc.alias) c.name = acc.alias;
         }
-        c.avatar = await resolveAvatar(c.addr);
+        c.avatar = await resolveAvatar(c.addr) || c.avatar;
         c._loading = false;
       } catch (e) {
         c._loading = false; c._err = 'not found';
@@ -1275,20 +1275,6 @@
       } catch (e) { }
       return null;
     }
-    const PRESETS = [
-      { name: 'TEIA DAO Treasury', handle: 'teiadao.tez', src: ['objkt', 'tzkt'] },
-      { name: 'TheTezosCommunity', handle: 'thetezoscommunity.tez', src: ['objkt', 'teztree'] },
-      { name: 'FlexasaurusRex', handle: 'flexasaurus.tez', src: ['objkt', 'teztree', 'hacktez'] },
-      { name: 'Skllzrmy', handle: 'skllzrmy.tez', src: ['hacktez', 'objkt'] },
-      { name: 'NftBiker', handle: 'nftbiker.tez', src: ['objkt', 'tzkt'] },
-      { name: 'pixelfern', handle: 'pixelfern.tez', src: ['objkt'] },
-      { name: 'glitchmoss', handle: 'glitchmoss.tez', src: ['hacktez', 'teztree'] },
-      { name: 'moonkoi', handle: 'moonkoi.tez', src: ['objkt'] },
-      { name: 'verdant', handle: 'verdant.tez', src: ['teztree'] },
-      { name: 'claywave', handle: 'claywave.tez', src: ['objkt', 'hacktez'] },
-      { name: 'noisebloom', handle: 'noisebloom.tez', src: ['objkt'] },
-      { name: 'onchain-otter', handle: 'onchain-otter.tez', src: ['hacktez'] },
-    ];
     let creators = []; let method = 'equal'; let yoloLevel = 'wild'; let lastHash = '';
 
     /* split math */
@@ -1390,27 +1376,83 @@
     }
     function renderAll() { renderMethods(); renderGrid(); }
 
-    /* search */
+    /* search — live objkt + hack.tez + teztree lookup, plus direct address / .tez entry */
+    let searchTimer = null, searchSeq = 0;
+    async function objktSearch(q) {
+      const term = '%' + q.replace(/[%_\\]/g, '') + '%';
+      const body = { query: 'query($q:String!){holder(where:{alias:{_ilike:$q}},order_by:{alias:asc},limit:6){address alias logo}}', variables: { q: term } };
+      const r = await fetch('https://data.objkt.com/v3/graphql', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json();
+      return ((j && j.data && j.data.holder) || []).filter(h => h.address && h.alias).map(h => ({ address: h.address, name: h.alias, logo: h.logo, src: 'objkt' }));
+    }
+    /* hack.tez builder directory — substring search over names, bios, skills, projects */
+    async function hacktezSearch(q) {
+      const r = await fetch('https://hacktez.com/api/v1/members?projects&limit=8&q=' + encodeURIComponent(q));
+      if (!r.ok) return [];
+      const j = await r.json();
+      return ((j && j.data) || []).filter(m => m.address).map(m => ({ address: m.address, name: (m.profile && m.profile.name) || m.name || m.label, logo: (m.profile && m.profile.picture) || null, src: 'hack.tez' }));
+    }
+    /* teztree link-in-bio handles — no search endpoint, so pull the (small) namespace once and filter locally */
+    let teztreeCache = null;
+    async function teztreeAll() {
+      if (teztreeCache) return teztreeCache;
+      const r = await fetch('https://www.teztree.com/api/v1/handles/recent?limit=200');
+      if (!r.ok) return (teztreeCache = []);
+      const j = await r.json();
+      return (teztreeCache = ((j && j.handles) || []).filter(h => h.address));
+    }
+    async function teztreeSearch(q) {
+      const t = q.toLowerCase();
+      const all = await teztreeAll();
+      return all.filter(h => (h.handle || '').toLowerCase().includes(t) || (h.displayName || '').toLowerCase().includes(t)).slice(0, 6).map(h => ({ address: h.address, name: h.displayName || h.handle, logo: null, src: 'teztree' }));
+    }
+    /* run all three discovery sources in parallel, dedupe by address (first source wins) */
+    async function searchAll(q) {
+      const results = await Promise.allSettled([objktSearch(q), hacktezSearch(q), teztreeSearch(q)]);
+      const out = [], seen = new Set();
+      for (const r of results) {
+        if (r.status !== 'fulfilled' || !r.value) continue;
+        for (const m of r.value) { if (!m.address || seen.has(m.address)) continue; seen.add(m.address); out.push(m); }
+      }
+      return out;
+    }
+    function rowManual(q, c) { return `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">${c._isAddr ? 'tezos address' : '.tez name'}</div></div></div>`; }
+    function rowDup(q, c) { return `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${c.name}</div><div class="rs" style="color:var(--dim)">already in your nine</div></div></div>`; }
+    function rowFound(m) { const short = m.address.slice(0, 8) + '…' + m.address.slice(-4); const sub = m.src ? short + ' · ' + m.src : short; return `<div class="ritem" data-addr="${m.address}" data-name="${(m.name || '').replace(/"/g, '')}" data-logo="${(m.logo || '').replace(/"/g, '')}"><img class="av" src="${m.logo ? ipfsURL(m.logo) : avatarSVG(m.address)}" onerror="this.onerror=null;this.src='${avatarSVG(m.address)}'" alt=""><div class="info"><div class="rn">${m.name}</div><div class="rs">${sub}</div></div></div>`; }
+    function rowNote(t) { return `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">${t}</div></div></div>`; }
+    function wireResults(box) {
+      box.querySelectorAll('.ritem[data-manual]').forEach(el => el.onclick = () => { addCreator(el.dataset.manual); clearSearch(); });
+      box.querySelectorAll('.ritem[data-addr]').forEach(el => el.onclick = () => { addFound(el.dataset.addr, el.dataset.name, el.dataset.logo); clearSearch(); });
+    }
     function renderResults(q) {
       const box = $('results'); q = q.trim();
       if (!q) { box.classList.remove('show'); box.innerHTML = ''; return; }
-      const ql = q.toLowerCase();
-      const items = PRESETS.filter(p => !creators.some(c => c.id === p.handle.toLowerCase()) && (p.name.toLowerCase().includes(ql) || p.handle.includes(ql)));
-      let html = '';
-      items.slice(0, 6).forEach(p => { html += `<div class="ritem" data-h="${p.handle}" data-n="${p.name}"><img class="av" src="${avatarSVG(p.handle)}" alt=""><div class="info"><div class="rn">${p.name}</div><div class="rs">${(p.src || ['teztree']).join(' · ')}</div></div></div>`; });
       const c = makeCreator(q);
-      if (c) {
-        if (creators.some(x => x.id === c.id)) html += `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${c.name}</div><div class="rs" style="color:var(--dim)">already in your nine</div></div></div>`;
-        else html += `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">manual · resolves onchain</div></div></div>`;
-      }
-      if (!html) html = `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">no matches — paste a tz1… or a .tez name</div></div></div>`;
-      box.innerHTML = html; box.classList.add('show');
-      box.querySelectorAll('.ritem[data-h]').forEach(el => el.onclick = () => { addPreset({ name: el.dataset.n, handle: el.dataset.h }); clearSearch(); });
-      box.querySelectorAll('.ritem[data-manual]').forEach(el => el.onclick = () => { addCreator(el.dataset.manual); clearSearch(); });
+      const head = c ? (creators.some(x => x.id === c.id) ? rowDup(q, c) : rowManual(q, c)) : '';
+      box.innerHTML = head + rowNote('searching…'); box.classList.add('show'); wireResults(box);
+      clearTimeout(searchTimer);
+      const seq = ++searchSeq;
+      searchTimer = setTimeout(async () => {
+        let matches = [];
+        try { matches = await searchAll(q); } catch (e) { }
+        if (seq !== searchSeq) return;
+        const live = matches.filter(m => !creators.some(x => x.addr === m.address)).slice(0, 8).map(rowFound).join('');
+        let html = head + live;
+        if (!html) html = rowNote('no matches — paste a tz1… or a .tez name');
+        box.innerHTML = html; box.classList.add('show'); wireResults(box);
+      }, 250);
+    }
+    function addFound(addr, name, logo) {
+      $('addErr').textContent = '';
+      if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; }
+      const c = makeCreator(addr); if (!c) return;
+      if (name) c.name = name;
+      if (logo) c.avatar = ipfsURL(logo);
+      if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; }
+      creators.push(c); renderAll(); enrichCreator(c);
     }
     function clearSearch() { $('search').value = ''; $('results').classList.remove('show'); $('results').innerHTML = ''; }
     function addCreator(v) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(v); if (!c) { $('addErr').textContent = "not a tz address or a .tez name"; return; } if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; } creators.push(c); renderAll(); enrichCreator(c); }
-    function addPreset(p) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(p.handle); if (!c) return; c.name = p.name; if (creators.some(x => x.id === c.id)) return; creators.push(c); renderAll(); enrichCreator(c); }
     /* paste a whole list at once — newline / comma / space / semicolon separated */
     function addMany(text) {
       const tokens = text.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
@@ -1588,10 +1630,6 @@
     $('copyBtn').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(SHARE_TEXT); $('copyBtn').textContent = 'copied ✓'; setTimeout(() => $('copyBtn').textContent = 'Copy text', 1400); };
     $('dlBtn').onclick = () => { try { const a = document.createElement('a'); a.download = 'my-garden.png'; a.href = $('gardenCanvas').toDataURL('image/png'); a.click(); } catch (e) { console.error('[sprinkler] card export failed (tainted canvas?):', e); $('sprinkleErr').textContent = "couldn't export the card — try again"; } };
 
-    /* temporary: fill 9 for testing */
-    $('fillTest').onclick = () => { creators = PRESETS.slice(0, 9).map(p => { const c = makeCreator(p.handle); c.name = p.name; return c; }); renderAll(); creators.forEach(c => enrichCreator(c)); };
-
-    /* pot presets */
     /* pot presets */
     function syncPresets() { const v = $('amount').value; document.querySelectorAll('#presets .preset').forEach(b => b.classList.toggle('sel', b.dataset.amt === v)); }
     document.querySelectorAll('#presets .preset').forEach(b => b.onclick = () => { $('amount').value = b.dataset.amt; renderGrid(); syncPresets(); });
