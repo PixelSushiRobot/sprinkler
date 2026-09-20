@@ -1422,15 +1422,23 @@
       const all = await teztreeAll();
       return all.filter(h => (h.handle || '').toLowerCase().includes(t) || (h.displayName || '').toLowerCase().includes(t)).slice(0, 6).map(h => ({ address: h.address, name: h.displayName || h.handle, logo: null, src: 'teztree' }));
     }
-    /* run all three discovery sources in parallel, dedupe by address (first source wins) */
+    /* run all three discovery sources in parallel, merging same-address hits into one
+       row that keeps every source tag, the first avatar found, and any builder meta */
     async function searchAll(q) {
       const results = await Promise.allSettled([objktSearch(q), hacktezSearch(q), teztreeSearch(q)]);
-      const out = [], seen = new Set();
+      const byAddr = new Map();
       for (const r of results) {
         if (r.status !== 'fulfilled' || !r.value) continue;
-        for (const m of r.value) { if (!m.address || seen.has(m.address)) continue; seen.add(m.address); out.push(m); }
+        for (const m of r.value) {
+          if (!m.address) continue;
+          const ex = byAddr.get(m.address);
+          if (!ex) { byAddr.set(m.address, { ...m, srcs: [m.src] }); continue; }
+          if (!ex.srcs.includes(m.src)) ex.srcs.push(m.src);
+          if (!ex.logo && m.logo) ex.logo = m.logo;
+          if (!ex.meta && m.meta) ex.meta = m.meta;
+        }
       }
-      return out;
+      return [...byAddr.values()].map(m => ({ ...m, src: m.srcs.join(' · ') }));
     }
     function rowManual(q, c) { return `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">${c._isAddr ? 'tezos address' : '.tez name'}</div></div></div>`; }
     function rowDup(q, c) { return `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${c.name}</div><div class="rs" style="color:var(--dim)">already in your nine</div></div></div>`; }
