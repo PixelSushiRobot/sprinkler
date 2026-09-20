@@ -1235,7 +1235,11 @@
       try {
         if (!c.addr) {
           const d = await fetchJSON(`${TZKT}/v1/domains?name=${encodeURIComponent(c._input.toLowerCase())}`);
-          if (Array.isArray(d) && d[0] && d[0].address) c.addr = d[0].address;
+          const rec = Array.isArray(d) ? d[0] : null;
+          // TzKT returns the forward record as an object {address}; hack.tez subdomains
+          // set no forward record, so fall back to the owner (who claimed the name)
+          const addr = rec && (((rec.address && rec.address.address)) || (rec.owner && rec.owner.address));
+          if (addr) c.addr = addr;
           else throw new Error('name not found');
         }
         // reject a second entry that resolves to an address already in the list
@@ -1385,12 +1389,21 @@
       const j = await r.json();
       return ((j && j.data && j.data.holder) || []).filter(h => h.address && h.alias).map(h => ({ address: h.address, name: h.alias, logo: h.logo, src: 'objkt' }));
     }
-    /* hack.tez builder directory — substring search over names, bios, skills, projects */
+    /* strip a .hack.tez / .tez suffix to the bare label — the hack.tez & teztree
+       search indexes match the label (fafo), not the full fafo.hack.tez string */
+    const bareLabel = q => q.replace(/\.(hack\.)?tez$/i, '').trim();
+    /* hack.tez builder directory — substring search over label, name, bio, skills, projects */
     async function hacktezSearch(q) {
-      const r = await fetch('https://hacktez.com/api/v1/members?projects&limit=8&q=' + encodeURIComponent(q));
+      const label = bareLabel(q);
+      if (!label) return [];
+      const r = await fetch('https://hacktez.com/api/v1/members?limit=8&q=' + encodeURIComponent(label));
       if (!r.ok) return [];
       const j = await r.json();
-      return ((j && j.data) || []).filter(m => m.address).map(m => ({ address: m.address, name: (m.profile && m.profile.name) || m.name || m.label, logo: (m.profile && m.profile.picture) || null, src: 'hack.tez' }));
+      return ((j && j.data) || []).filter(m => m.address).map(m => {
+        const st = m.profile && m.profile.status, np = m.counts && m.counts.projects;
+        const meta = [st, np ? np + (np === 1 ? ' project' : ' projects') : ''].filter(Boolean).join(' · ');
+        return { address: m.address, name: (m.profile && m.profile.name) || m.name || m.label, logo: (m.profile && m.profile.picture) || null, src: 'hack.tez', meta };
+      });
     }
     /* teztree link-in-bio handles — no search endpoint, so pull the (small) namespace once and filter locally */
     let teztreeCache = null;
@@ -1402,7 +1415,8 @@
       return (teztreeCache = ((j && j.handles) || []).filter(h => h.address));
     }
     async function teztreeSearch(q) {
-      const t = q.toLowerCase();
+      const t = bareLabel(q).toLowerCase();
+      if (!t) return [];
       const all = await teztreeAll();
       return all.filter(h => (h.handle || '').toLowerCase().includes(t) || (h.displayName || '').toLowerCase().includes(t)).slice(0, 6).map(h => ({ address: h.address, name: h.displayName || h.handle, logo: null, src: 'teztree' }));
     }
@@ -1418,7 +1432,7 @@
     }
     function rowManual(q, c) { return `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">${c._isAddr ? 'tezos address' : '.tez name'}</div></div></div>`; }
     function rowDup(q, c) { return `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${c.name}</div><div class="rs" style="color:var(--dim)">already in your nine</div></div></div>`; }
-    function rowFound(m) { const short = m.address.slice(0, 8) + '…' + m.address.slice(-4); const sub = m.src ? short + ' · ' + m.src : short; return `<div class="ritem" data-addr="${m.address}" data-name="${(m.name || '').replace(/"/g, '')}" data-logo="${(m.logo || '').replace(/"/g, '')}"><img class="av" src="${m.logo ? ipfsURL(m.logo) : avatarSVG(m.address)}" onerror="this.onerror=null;this.src='${avatarSVG(m.address)}'" alt=""><div class="info"><div class="rn">${m.name}</div><div class="rs">${sub}</div></div></div>`; }
+    function rowFound(m) { const short = m.address.slice(0, 8) + '…' + m.address.slice(-4); const sub = [short, m.src, m.meta].filter(Boolean).join(' · '); return `<div class="ritem" data-addr="${m.address}" data-name="${(m.name || '').replace(/"/g, '')}" data-logo="${(m.logo || '').replace(/"/g, '')}"><img class="av" src="${m.logo ? ipfsURL(m.logo) : avatarSVG(m.address)}" onerror="this.onerror=null;this.src='${avatarSVG(m.address)}'" alt=""><div class="info"><div class="rn">${m.name}</div><div class="rs">${sub}</div></div></div>`; }
     function rowNote(t) { return `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">${t}</div></div></div>`; }
     function wireResults(box) {
       box.querySelectorAll('.ritem[data-manual]').forEach(el => el.onclick = () => { addCreator(el.dataset.manual); clearSearch(); });
