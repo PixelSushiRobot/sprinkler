@@ -1253,12 +1253,12 @@
         c.activity = clampN(Math.log10(tx + 1) / 4 * 100, 3, 100);
         const balTez = ((acc && acc.balance) || 0) / 1e6;
         c.received = clampN(Math.log10(balTez + 1) / 6 * 100, 3, 100);
-        if (c._isAddr) {
+        if (c._isAddr && !c._named) {
           const rev = await fetchJSON(`${TZKT}/v1/domains?address=${c.addr}&limit=1`).catch(() => null);
           if (Array.isArray(rev) && rev[0] && rev[0].name) c.name = rev[0].name;
           else if (acc && acc.alias) c.name = acc.alias;
         }
-        c.avatar = await resolveAvatar(c.addr) || c.avatar;
+        if (!c.avatar) c.avatar = await resolveAvatar(c.addr);
         c._loading = false;
       } catch (e) {
         c._loading = false; c._err = 'not found';
@@ -1399,10 +1399,12 @@
       const r = await fetch('https://hacktez.com/api/v1/members?limit=8&q=' + encodeURIComponent(label));
       if (!r.ok) return [];
       const j = await r.json();
-      return ((j && j.data) || []).filter(m => m.address).map(m => {
+      // hack.tez members set no forward address record — the wallet is `owner`.
+      // urls.avatar returns the custom picture if set, else a generated hackatar.
+      return ((j && j.data) || []).filter(m => m.owner).map(m => {
         const st = m.profile && m.profile.status, np = m.counts && m.counts.projects;
         const meta = [st, np ? np + (np === 1 ? ' project' : ' projects') : ''].filter(Boolean).join(' · ');
-        return { address: m.address, name: (m.profile && m.profile.name) || m.name || m.label, logo: (m.profile && m.profile.picture) || null, src: 'hack.tez', meta };
+        return { address: m.owner, name: m.name || m.label, logo: (m.urls && m.urls.avatar) || null, src: 'hack.tez', meta };
       });
     }
     /* teztree link-in-bio handles — no search endpoint, so pull the (small) namespace once and filter locally */
@@ -1460,7 +1462,7 @@
       $('addErr').textContent = '';
       if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; }
       const c = makeCreator(addr); if (!c) return;
-      if (name) c.name = name;
+      if (name) { c.name = name; c._named = true; }
       if (logo) c.avatar = ipfsURL(logo);
       if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; }
       creators.push(c); renderAll(); enrichCreator(c);
