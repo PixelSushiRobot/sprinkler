@@ -847,6 +847,38 @@
       word-break: break-all
     }
 
+    .nettog {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden
+    }
+
+    .nettog button {
+      font: inherit;
+      font-size: 9.5px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 5px 9px;
+      background: transparent;
+      color: var(--dim);
+      border: none;
+      cursor: pointer
+    }
+
+    .nettog button+button {
+      border-left: 1px solid var(--line)
+    }
+
+    .nettog button:hover {
+      color: var(--ink)
+    }
+
+    .nettog button.on {
+      background: var(--ink);
+      color: var(--bg)
+    }
+
     .ov-table {
       width: 100%;
       border-collapse: collapse;
@@ -1148,6 +1180,7 @@
         <div id="confirmPane">
           <h3>Ready to sprinkle?</h3>
           <div class="rcpt">
+            <div class="rcpt-row"><span class="k">Network</span><span class="v"><span class="nettog" id="netTog"><button type="button" data-net="shadownet">Shadownet · test</button><button type="button" data-net="mainnet">Mainnet · real</button></span></span></div>
             <div class="rcpt-row" id="walletRow"><span class="k" id="walletK">Wallet</span><span class="v" id="walletVal"></span></div>
             <div class="rcpt-row"><span class="k">Sprinkling</span><span class="v" id="rcptAmt">1000 XTZ</span></div>
             <div class="rcpt-row"><span class="k">Across</span><span class="v">9 creators · one transaction</span></div>
@@ -1182,14 +1215,18 @@
   </div>
 
   <script>
-    /* ── network config ─ flip these to switch networks ─────────────── */
-    window.SPRINKLER_CFG = {
-      network: 'mainnet',             // Beacon NetworkType — 'custom' + Shadownet for testnet
-      networkName: 'Mainnet',
-      rpc: 'https://tezos-mainnet.octez.io',
-      tzkt: 'https://api.tzkt.io',
-      explorer: 'https://tzkt.io'
+    /* ── network config ──────────────────────────────────────────────────
+       Search + resolution (objkt, hack.tez, teztree, Tezos Domains) only have
+       data on MAINNET, so reads always hit mainnet. The PAYOUT network is a
+       runtime toggle in the confirm dialog — default Shadownet so people can
+       try the whole flow with faucet tez before any real money moves.        */
+    window.SPRINKLER_NETS = {
+      shadownet: { network: 'custom', networkName: 'Shadownet', rpc: 'https://rpc.shadownet.teztnets.com', explorer: 'https://shadownet.tzkt.io', testnet: true },
+      mainnet: { network: 'mainnet', networkName: 'Mainnet', rpc: 'https://tezos-mainnet.octez.io', explorer: 'https://tzkt.io', testnet: false }
     };
+    window.SPRINKLER_PAYNET = 'shadownet';          // default payout network
+    window.SPRINKLER_TZKT = 'https://api.tzkt.io';  // reads — always mainnet
+  </script>
   </script>
   <script>
     /* theme */
@@ -1208,7 +1245,7 @@
     function drawAvatar(ctx, seed, x, y, size) { const d = avatarData(seed), cell = size / 5; ctx.fillStyle = d.bg; ctx.fillRect(x, y, size, size); ctx.fillStyle = d.fg; for (let gy = 0; gy < 5; gy++)for (let gx = 0; gx < 5; gx++)if (d.cells[gy][gx]) ctx.fillRect(x + gx * cell, y + gy * cell, cell + 0.5, cell + 0.5); }
 
     /* model */
-    const TZKT = window.SPRINKLER_CFG.tzkt;
+    const TZKT = window.SPRINKLER_TZKT;
     const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const ipfsURL = u => !u ? null : (u.startsWith('ipfs://') ? 'https://ipfs.io/ipfs/' + u.slice(7) : u);
     async function fetchJSON(url, opts) { const r = await fetch(url, opts); if (!r.ok) throw new Error('http ' + r.status); return r.json(); }
@@ -1541,8 +1578,20 @@
 
     /* overlay flow */
     const SHARE_TEXT = '9 creators. 1 pot. zero spreadsheets. 🌱';
-    const EXPLORER = window.SPRINKLER_CFG.explorer;
-    (function () { const n = window.SPRINKLER_CFG, el = document.getElementById('netLabel'); if (el) el.textContent = n.network === 'mainnet' ? 'live on Tezos mainnet' : 'on ' + n.networkName + ' (testnet)'; })();
+    const payNet = () => window.SPRINKLER_NETS[window.SPRINKLER_PAYNET];
+    function renderNetLabel() {
+      const n = payNet(), el = document.getElementById('netLabel');
+      if (el) el.textContent = n.testnet ? 'try it: real search · test payouts on ' + n.networkName : 'live on Tezos mainnet';
+      document.querySelectorAll('#netTog button').forEach(b => b.classList.toggle('on', b.dataset.net === window.SPRINKLER_PAYNET));
+    }
+    // switch the payout network at runtime — rebuilds the wallet client and drops any session
+    async function setPayNet(key) {
+      if (!window.SPRINKLER_NETS[key] || key === window.SPRINKLER_PAYNET) return;
+      window.SPRINKLER_PAYNET = key;
+      walletAddr = null;
+      try { if (window.tez && window.tez.setNetwork) await window.tez.setNetwork(key); } catch (e) { }
+      renderNetLabel(); renderWalletState();
+    }
     let walletAddr = null;
 
     const shortAddr = a => a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
@@ -1562,7 +1611,7 @@
         $('walletK').textContent = 'From';
         $('walletVal').textContent = shortAddr(walletAddr);
         $('confirmBtn').disabled = !ready;
-        note.textContent = ready ? 'Your wallet has the final say.'
+        note.textContent = ready ? (payNet().testnet ? "Shadownet test — you're spending faucet tez, not real money." : 'Your wallet has the final say.')
           : creators.some(c => c._err) ? 'Remove the flagged recipient to continue.'
             : 'Resolving addresses — one moment.';
       } else {
@@ -1635,7 +1684,7 @@
       }
       lastHash = hash;
       $('successLead').textContent = pot + ' XTZ, sprinkled across nine.';
-      $('txLink').href = EXPLORER + '/' + hash;
+      $('txLink').href = payNet().explorer + '/' + hash;
       $('shareText').textContent = SHARE_TEXT;
       $('confirmPane').style.display = 'none'; $('successPane').style.display = '';
       renderGarden();
@@ -1649,6 +1698,8 @@
     whenTezReady().then(async () => { try { if (window.tez) { walletAddr = await window.tez.getActive(); syncConfirmReady(); } } catch (e) { } });
     window.addEventListener('tez-account', e => { walletAddr = e.detail || null; syncConfirmReady(); });
     $('ovClose').onclick = closeOverlay;
+    document.querySelectorAll('#netTog button').forEach(b => b.onclick = () => setPayNet(b.dataset.net));
+    renderNetLabel();
     $('overlay').addEventListener('click', e => { if (e.target === $('overlay')) closeOverlay(); });
     $('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT), '_blank');
     $('copyBtn').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(SHARE_TEXT); $('copyBtn').textContent = 'copied ✓'; setTimeout(() => $('copyBtn').textContent = 'Copy text', 1400); };
@@ -1775,34 +1826,51 @@
 
   <!-- Tezos wallet connect + batch payout via Octez Connect (tzip-10). Wallet forges + signs; no Taquito, no build step. -->
   <script type="module">
-    const CFG = window.SPRINKLER_CFG;
+    const NETS = window.SPRINKLER_NETS;
     try {
       const { DAppClient } = await import('https://esm.sh/@tezos-x/octez.connect-sdk@5?bundle');
-      const NET = { type: CFG.network, name: CFG.networkName, rpcUrl: CFG.rpc };
-      const client = new DAppClient({ name: 'Sprinkler', network: NET });
-      // React to account changes (connect, switch, disconnect) — octez.connect
-      // warns if this isn't subscribed. Bridge it to the app via a window event.
-      client.subscribeToEvent('ACTIVE_ACCOUNT_SET', (account) => {
-        window.dispatchEvent(new CustomEvent('tez-account', { detail: (account && account.address) || null }));
-      });
+      // The payout network is chosen at runtime, but a DAppClient fixes its network
+      // at construction — so we build (and rebuild) the client to match the selection.
+      let client = null, clientNet = null;
+      function build(key) {
+        const n = NETS[key];
+        const c = new DAppClient({ name: 'Sprinkler', network: { type: n.network, name: n.networkName, rpcUrl: n.rpc } });
+        // octez.connect warns if ACTIVE_ACCOUNT_SET isn't subscribed; bridge it to the app.
+        c.subscribeToEvent('ACTIVE_ACCOUNT_SET', (account) => {
+          window.dispatchEvent(new CustomEvent('tez-account', { detail: (account && account.address) || null }));
+        });
+        return c;
+      }
+      async function ensure() {
+        const key = window.SPRINKLER_PAYNET;
+        if (client && clientNet === key) return client;
+        if (client) { try { await client.clearActiveAccount(); } catch (e) { } }  // drop the old network's session
+        client = build(key); clientNet = key;
+        return client;
+      }
 
       window.tez = {
         // returns the connected address, prompting the wallet if needed
         async connect() {
-          const active = await client.getActiveAccount();
-          if (!active) await client.requestPermissions();   // network is set on the client
-          const acc = await client.getActiveAccount();
+          const c = await ensure();
+          const active = await c.getActiveAccount();
+          if (!active) await c.requestPermissions();   // network is set on the client
+          const acc = await c.getActiveAccount();
           return acc ? acc.address : null;
         },
         // returns the already-connected address, or null
         async getActive() {
-          const a = await client.getActiveAccount();
+          const c = await ensure();
+          const a = await c.getActiveAccount();
           return a ? a.address : null;
         },
-        async disconnect() { await client.clearActiveAccount(); },
+        async disconnect() { if (client) await client.clearActiveAccount(); },
+        // rebuild for a new payout network, clearing any prior session
+        async setNetwork() { await ensure(); },
         // recipients: [{ addr, mutez }] — one batched operation; the wallet forges + signs
         async sprinkle(recipients) {
-          const res = await client.requestOperation({
+          const c = await ensure();
+          const res = await c.requestOperation({
             operationDetails: recipients.map(r => ({
               kind: 'transaction',
               destination: r.addr,
