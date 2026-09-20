@@ -1175,20 +1175,20 @@
       </div>
     </div>
 
-    <span class="foot">made with Sprinkler · on Shadownet for now · your wallet signs, we never hold the funds
+    <span class="foot">made with Sprinkler · <span id="netLabel"></span> · your wallet signs, we never hold the funds
       <span class="sub2">names &amp; avatars resolve live via TzKT &amp; objkt · one batched payout, straight from your wallet</span>
     </span>
 
   </div>
 
   <script>
-    /* ── network config ─ flip these to go mainnet ──────────────────── */
+    /* ── network config ─ flip these to switch networks ─────────────── */
     window.SPRINKLER_CFG = {
-      network: 'custom',              // Beacon NetworkType — set 'mainnet' to go live
-      networkName: 'Shadownet',
-      rpc: 'https://rpc.shadownet.teztnets.com',
-      tzkt: 'https://api.shadownet.tzkt.io',
-      explorer: 'https://shadownet.tzkt.io'
+      network: 'mainnet',             // Beacon NetworkType — 'custom' + Shadownet for testnet
+      networkName: 'Mainnet',
+      rpc: 'https://tezos-mainnet.octez.io',
+      tzkt: 'https://api.tzkt.io',
+      explorer: 'https://tzkt.io'
     };
   </script>
   <script>
@@ -1476,6 +1476,7 @@
     /* overlay flow */
     const SHARE_TEXT = '9 creators. 1 pot. zero spreadsheets. 🌱';
     const EXPLORER = window.SPRINKLER_CFG.explorer;
+    (function () { const n = window.SPRINKLER_CFG, el = document.getElementById('netLabel'); if (el) el.textContent = n.network === 'mainnet' ? 'live on Tezos mainnet' : 'on ' + n.networkName + ' (testnet)'; })();
     let walletAddr = null;
 
     const shortAddr = a => a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
