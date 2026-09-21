@@ -1190,7 +1190,7 @@
         <div id="confirmPane">
           <h3>Ready to sprinkle?</h3>
           <div class="rcpt">
-            <div class="rcpt-row"><span class="k">Network</span><span class="v"><span class="nettog" id="netTog"><button type="button" data-net="shadownet">Shadownet · test</button><button type="button" data-net="mainnet">Mainnet · real</button></span></span></div>
+            <div class="rcpt-row"><span class="k">Network</span><span class="v"><span class="nettog" id="netTog"><button type="button" data-net="shadownet">Shadownet</button><button type="button" data-net="mainnet">Mainnet</button></span></span></div>
             <div class="rcpt-row" id="walletRow"><span class="k" id="walletK">Wallet</span><span class="v" id="walletVal"></span></div>
             <div class="rcpt-row"><span class="k">Sprinkling</span><span class="v" id="rcptAmt">1000 XTZ</span></div>
             <div class="rcpt-row"><span class="k">Across</span><span class="v">9 creators · one transaction</span></div>
@@ -1665,7 +1665,7 @@
       // KT1 = smart contract; a mainnet contract isn't originated on a testnet, so a
       // test payout to it fails simulation before signing. Catch it here with a clear msg.
       const badKT = payNet().testnet ? creators.find(c => c.addr && c.addr.startsWith('KT1')) : null;
-      const ktNote = 'Contract (KT1) addresses only exist on mainnet — switch to Mainnet · real to send here, or remove it to test on ' + payNet().networkName + '.';
+      const ktNote = 'Contract (KT1) addresses only exist on mainnet — switch to Mainnet to send here, or remove it to test on ' + payNet().networkName + '.';
       if (walletAddr) {
         $('walletK').textContent = 'From';
         $('walletVal').textContent = shortAddr(walletAddr);
