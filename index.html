@@ -1640,19 +1640,24 @@
 
     function renderWalletState() {
       const ready = recipientsReady(), note = $('confirmNote');
+      // KT1 = smart contract; a mainnet contract isn't originated on a testnet, so a
+      // test payout to it fails simulation before signing. Catch it here with a clear msg.
+      const badKT = payNet().testnet ? creators.find(c => c.addr && c.addr.startsWith('KT1')) : null;
+      const ktNote = 'Contract (KT1) addresses only exist on mainnet — switch to Mainnet · real to send here, or remove it to test on ' + payNet().networkName + '.';
       if (walletAddr) {
         $('walletK').textContent = 'From';
         $('walletVal').textContent = shortAddr(walletAddr);
-        $('confirmBtn').disabled = !ready;
-        note.textContent = ready ? (payNet().testnet ? "Shadownet test — you're spending faucet tez, not real money." : 'Your wallet has the final say.')
-          : creators.some(c => c._err) ? 'Remove the flagged recipient to continue.'
-            : 'Resolving addresses — one moment.';
+        $('confirmBtn').disabled = !ready || !!badKT;
+        note.textContent = badKT ? ktNote
+          : ready ? (payNet().testnet ? "Shadownet test — you're spending faucet tez, not real money." : 'Your wallet has the final say.')
+            : creators.some(c => c._err) ? 'Remove the flagged recipient to continue.'
+              : 'Resolving addresses — one moment.';
       } else {
         $('walletK').textContent = 'Wallet';
         $('walletVal').innerHTML = '<button class="btn ghost wc-btn" id="connectBtn">connect wallet</button>';
         $('connectBtn').onclick = doConnect;
         $('confirmBtn').disabled = true;
-        note.textContent = 'Connect a Tezos wallet to sprinkle.';
+        note.textContent = badKT ? ktNote : 'Connect a Tezos wallet to sprinkle.';
       }
     }
 
@@ -1702,6 +1707,7 @@
 
     async function doSprinkle() {
       if (!recipientsReady() || !walletAddr) return;
+      if (payNet().testnet && creators.some(c => c.addr && c.addr.startsWith('KT1'))) { renderWalletState(); return; }
       const pot = Math.max(0, +$('amount').value || 0), split = computeSplit();
       const amounts = payoutMutez(pot, split);
       const recipients = creators.map((c, i) => ({ addr: c.addr, mutez: amounts[i] }));
