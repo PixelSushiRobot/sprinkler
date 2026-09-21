@@ -1671,7 +1671,7 @@
         $('walletVal').textContent = shortAddr(walletAddr);
         $('confirmBtn').disabled = !ready || !!badKT;
         note.textContent = badKT ? ktNote
-          : ready ? (payNet().testnet ? "Shadownet test — you're spending faucet tez, not real money." : 'Your wallet has the final say.')
+          : ready ? (payNet().testnet ? 'Faucet XTZ only. Sprinkle freely.' : 'Your wallet signs. Your XTZ stays yours.')
             : creators.some(c => c._err) ? 'Remove the flagged recipient to continue.'
               : 'Resolving addresses — one moment.';
       } else {
