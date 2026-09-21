@@ -211,24 +211,6 @@
       margin: 0 0 14px
     }
 
-    .testbtn {
-      margin-left: 12px;
-      font-family: inherit;
-      font-size: 9.5px;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: var(--muted);
-      background: transparent;
-      border: 1px solid var(--line);
-      padding: 3px 7px;
-      cursor: pointer
-    }
-
-    .testbtn:hover {
-      color: var(--ink);
-      border-color: var(--ink)
-    }
-
     button {
       font-family: inherit;
       cursor: pointer
@@ -275,7 +257,7 @@
     /* search */
     .searchwrap {
       position: relative;
-      margin-bottom: 14px
+      margin-bottom: 0
     }
 
     .searchwrap input {
@@ -503,14 +485,14 @@
     .mhint {
       font-size: 10.5px;
       color: var(--dim);
-      margin: 0 0 12px;
+      margin: 12px 0 0;
       line-height: 1.5
     }
 
     .yolobar {
       display: flex;
       gap: 6px;
-      margin: 0 0 14px;
+      margin: 12px 0 0;
       align-items: center;
       flex-wrap: wrap
     }
@@ -764,8 +746,16 @@
     .err {
       font-size: 11px;
       color: var(--muted);
-      margin: 8px 1px 0;
-      min-height: 15px
+      margin: 0 1px;
+      min-height: 0
+    }
+
+    .err:empty {
+      display: none
+    }
+
+    .err:not(:empty) {
+      margin-top: 12px
     }
 
     /* overlay */
@@ -1089,6 +1079,10 @@
       margin-top: 6px
     }
 
+    .foot #netLabel {
+      display: block
+    }
+
     @media (max-width:560px) {
       .grid {
         grid-template-columns: repeat(2, minmax(0, 1fr))
@@ -1119,9 +1113,7 @@
     <header>
       <div class="head-l">
         <h1>Sprinkler</h1>
-        <p class="sub">You know who you want to support, but your math is not mathing. Pick nine, choose a vibe, and let
-          Sprinkler handle the
-          rest.</p>
+        <p class="sub">You know who you want to support, but your math is not mathing. Pick nine, choose a vibe, and let Sprinkler handle the rest.</p>
       </div>
       <div class="theme-toggle" id="themeToggle">
         <button class="th-btn" data-theme-choice="light" title="Light"><svg viewBox="0 0 24 24" fill="none"
@@ -1146,11 +1138,9 @@
       <div class="col col-left">
         <section class="box">
           <div class="phead"><span class="bn">01</span>Pick nine</div>
-          <p class="slead">Search a name, paste a Tezos wallet, or drop in a whole list. Nine is the magic number. A
-            proper little garden.</p>
+          <p class="slead">Search a name, paste a Tezos wallet, or drop in a whole list. Nine is the magic number. A proper little garden.</p>
           <div class="searchwrap">
-            <input id="search" placeholder="search a name, or paste a Tezos wallet" autocomplete="off"
-              spellcheck="false">
+            <input id="search" placeholder="search a name, or paste a Tezos wallet" autocomplete="off" spellcheck="false">
             <div class="results" id="results"></div>
           </div>
           <div class="err" id="addErr"></div>
@@ -1179,7 +1169,8 @@
 
       <div class="col col-right">
         <section class="box">
-          <div class="phead"><span class="bn">04</span>Your nine<span class="count" id="count">0 / 9</span></div>
+          <div class="phead"><span class="bn">04</span>Your nine<span class="count"
+              id="count">0 / 9</span></div>
           <div class="gridwrap">
             <div class="grid" id="grid"></div>
             <div class="numlayer" id="numlayer"></div>
@@ -1196,17 +1187,14 @@
         <div id="confirmPane">
           <h3>Ready to sprinkle?</h3>
           <div class="rcpt">
-            <div class="rcpt-row"><span class="k">Network</span><span class="v"><span class="nettog" id="netTog"><button
-                    type="button" data-net="shadownet">Shadownet · test</button><button type="button"
-                    data-net="mainnet">Mainnet · real</button></span></span></div>
-            <div class="rcpt-row" id="walletRow"><span class="k" id="walletK">Wallet</span><span class="v"
-                id="walletVal"></span></div>
+            <div class="rcpt-row"><span class="k">Network</span><span class="v"><span class="nettog" id="netTog"><button type="button" data-net="shadownet">Shadownet · test</button><button type="button" data-net="mainnet">Mainnet · real</button></span></span></div>
+            <div class="rcpt-row" id="walletRow"><span class="k" id="walletK">Wallet</span><span class="v" id="walletVal"></span></div>
             <div class="rcpt-row"><span class="k">Sprinkling</span><span class="v" id="rcptAmt">1000 XTZ</span></div>
-            <div class="rcpt-row"><span class="k">Across</span><span class="v">9 creators · 1 transaction</span></div>
+            <div class="rcpt-row"><span class="k">Across</span><span class="v">9 creators · one transaction</span></div>
           </div>
           <table class="ov-table" id="confirmTable"></table>
           <button class="btn" id="confirmBtn" style="width:100%" disabled>sprinkle 1000 XTZ</button>
-          <p class="note" id="confirmNote">Nothing moves until you sign.</p>
+          <p class="note" id="confirmNote">Your wallet has the final say.</p>
           <p class="note err" id="sprinkleErr"></p>
         </div>
         <div id="successPane" style="display:none">
@@ -1227,8 +1215,9 @@
       </div>
     </div>
 
-    <span class="foot">Your wallet signs. We never hold the funds.
-      <span class="sub2">Names &amp; avatars resolve live via TzKT, objkt, hack.tez &amp; Teztree.</span>
+    <span class="foot">your wallet signs. we never hold the funds.
+      <span class="sub2">names &amp; avatars resolve live via TzKT, objkt, hack.tez &amp; teztree</span>
+      <span class="sub2" id="netLabel"></span>
     </span>
 
   </div>
