@@ -1256,6 +1256,8 @@
     const TZKT = window.SPRINKLER_TZKT;
     const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const ipfsURL = u => !u ? null : (u.startsWith('ipfs://') ? 'https://ipfs.io/ipfs/' + u.slice(7) : u);
+    // objkt avatar CDN: returns the wallet's custom avatar if set, else a generated default
+    const objktAvatar = a => 'https://avatar.objkt.com/v1/' + a;
     async function fetchJSON(url, opts) { const r = await fetch(url, opts); if (!r.ok) throw new Error('http ' + r.status); return r.json(); }
 
     function makeCreator(input) {
@@ -1314,7 +1316,9 @@
             }
           }
         }
-        if (!c.avatar && prof.logo) c.avatar = prof.logo;
+        // objkt's CDN returns the custom avatar if set, else a generated default —
+        // so every creator gets a real avatar; identicon stays as the onerror fallback
+        if (!c.avatar) c.avatar = objktAvatar(c.addr);
         c._loading = false;
       } catch (e) {
         c._loading = false; c._err = 'not found';
