@@ -1,5 +1,7 @@
 # Sprinkler
 
+**Live:** https://pixelsushirobot.github.io/sprinkler/
+
 Pour one pot of tez across nine creators in a single batched transaction. Pick
 nine, choose how to split, connect a wallet, sign once — everyone gets watered,
 and you get a shareable garden card.
