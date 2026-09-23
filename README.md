@@ -6,8 +6,33 @@ Pour one pot of tez across nine creators in a single batched transaction. Pick
 nine, choose how to split, connect a wallet, sign once — everyone gets watered,
 and you get a shareable garden card.
 
-Single-file static site (`index.html`), no build step. The wallet forges and
-signs; Sprinkler never touches the funds.
+Plain static site — `index.html`, `css/style.css`, and a handful of native ES
+modules under `js/`. No bundler, no build step: every `js/*.js` file is
+loaded directly by the browser via `<script type="module">` / `import`. The
+wallet forges and signs; Sprinkler never touches the funds.
+
+```
+index.html        markup only
+css/style.css      all styles
+js/
+  config.js        network config (Shadownet / Mainnet), active payout network
+  dom.js           tiny $(id) helper
+  state.js         the nine creators, split method, split math
+  avatar.js        identicon generation (rng + SVG/canvas)
+  api.js           TzKT / objkt / hack.tez / Teztree resolution & search
+  grid.js          the "your nine" grid, drag-to-reorder, method picker
+  search.js        the search box + results dropdown
+  presets.js       the 9 / 90 / 900 / Custom pot chips
+  garden.js        the shareable "garden" canvas card
+  overlay.js       confirm dialog, network toggle, sprinkle flow
+  wallet.js        Octez Connect (tzip-10) integration — isolated, sets window.tez
+  main.js          bootstraps everything else
+```
+
+`wallet.js` is intentionally not imported by the other modules — it's loaded
+as its own `<script type="module">` so a CDN failure there surfaces as an
+error (`window.tezError`) instead of breaking the rest of the app. See
+`SECURITY_AUDIT.md` for a from-an-attacker's-view review of this codebase.
 
 ## What it does
 
@@ -114,7 +139,8 @@ is gone; Shadownet replaces it.
 
 ## Deploy
 
-Copy `index.html` (and the icon files it references) to any static host — it's
-served as-is. Note that wallet connect and the live API calls only work from a
-real host, not a sandboxed preview (CSP blocks the CDN import and external
+Copy the whole repo (`index.html`, `css/`, `js/`, and the icon files) to any
+static host — it's served as-is, no build step. Note that wallet connect and
+the live API calls only work from a real host, not a sandboxed preview (CSP
+blocks the CDN import and external
 fetches).
