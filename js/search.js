@@ -3,14 +3,22 @@ import { avatarSVG } from './avatar.js';
 import { creators, makeCreator, full } from './state.js';
 import { ipfsURL, searchAll, enrichCreator } from './api.js';
 import { renderAll } from './grid.js';
+import { escapeHTML } from './escape.js';
 
 /* search — live objkt + hack.tez + teztree lookup, plus direct address / .tez entry */
 let searchTimer = null, searchSeq = 0;
 
-function rowManual(q, c) { return `<div class="ritem" data-manual="${q.replace(/"/g, '')}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${c.name}</div><div class="rs">${c._isAddr ? 'tezos address' : '.tez name'}</div></div></div>`; }
-function rowDup(q, c) { return `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${c.name}</div><div class="rs" style="color:var(--dim)">already in your nine</div></div></div>`; }
-function rowFound(m) { const short = m.address.slice(0, 8) + '…' + m.address.slice(-4); const sub = [short, m.src, m.meta].filter(Boolean).join(' · '); return `<div class="ritem" data-addr="${m.address}" data-name="${(m.name || '').replace(/"/g, '')}" data-logo="${(m.logo || '').replace(/"/g, '')}"><img class="av" src="${m.logo ? ipfsURL(m.logo) : avatarSVG(m.address)}" onerror="this.onerror=null;this.src='${avatarSVG(m.address)}'" alt=""><div class="info"><div class="rn">${m.name}</div><div class="rs">${sub}</div></div></div>`; }
-function rowNote(t) { return `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">${t}</div></div></div>`; }
+// rowManual/rowDup render `q`/`c.name` before any external profile lookup has
+// run — `c` here always comes straight from makeCreator(q), whose isAddr/isName
+// regexes already constrain the character set, so escaping is just cheap
+// consistency, not the load-bearing defense. rowFound is the real boundary:
+// m.name/m.logo/m.meta/m.address are live values from objkt/hack.tez/Teztree,
+// each a public directory anyone can put arbitrary text into. See
+// SECURITY_AUDIT.md finding #1.
+function rowManual(q, c) { return `<div class="ritem" data-manual="${escapeHTML(q)}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${escapeHTML(c.name)}</div><div class="rs">${c._isAddr ? 'tezos address' : '.tez name'}</div></div></div>`; }
+function rowDup(q, c) { return `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${escapeHTML(c.name)}</div><div class="rs" style="color:var(--dim)">already in your nine</div></div></div>`; }
+function rowFound(m) { const short = m.address.slice(0, 8) + '…' + m.address.slice(-4); const sub = [short, m.src, m.meta].filter(Boolean).join(' · '); return `<div class="ritem" data-addr="${escapeHTML(m.address)}" data-name="${escapeHTML(m.name || '')}" data-logo="${escapeHTML(m.logo || '')}"><img class="av" src="${escapeHTML(m.logo ? ipfsURL(m.logo) : avatarSVG(m.address))}" onerror="this.onerror=null;this.src='${avatarSVG(m.address)}'" alt=""><div class="info"><div class="rn">${escapeHTML(m.name)}</div><div class="rs">${escapeHTML(sub)}</div></div></div>`; }
+function rowNote(t) { return `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">${escapeHTML(t)}</div></div></div>`; }
 function wireResults(box) {
   box.querySelectorAll('.ritem[data-manual]').forEach(el => el.onclick = () => { addCreator(el.dataset.manual); clearSearch(); });
   box.querySelectorAll('.ritem[data-addr]').forEach(el => el.onclick = () => { addFound(el.dataset.addr, el.dataset.name, el.dataset.logo); clearSearch(); });

@@ -2,6 +2,7 @@ import { TZKT } from './config.js';
 import { creators } from './state.js';
 import { renderAll } from './grid.js';
 import { syncConfirmReady } from './overlay.js';
+import { isValidTezosAddress } from './base58check.js';
 
 const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export const ipfsURL = u => !u ? null : (u.startsWith('ipfs://') ? 'https://ipfs.io/ipfs/' + u.slice(7) : u);
@@ -20,6 +21,14 @@ export async function enrichCreator(c) {
       const addr = rec && (((rec.address && rec.address.address)) || (rec.owner && rec.owner.address));
       if (addr) c.addr = addr;
       else throw new Error('name not found');
+    }
+    // catch a mistyped/corrupted address before it's ever shown as "resolved" —
+    // the shape regex in makeCreator lets a bad checksum through, and a wallet
+    // would otherwise be the first thing to reject it, well after the user has
+    // reviewed the whole nine-recipient batch
+    if (!(await isValidTezosAddress(c.addr))) {
+      c._err = 'invalid address'; c._loading = false;
+      renderAll(); syncConfirmReady(); return;
     }
     // reject a second entry that resolves to an address already in the list
     // (e.g. someone added once as alice.tez and once as her tz1… address)
