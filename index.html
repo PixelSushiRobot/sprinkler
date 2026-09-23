@@ -4,6 +4,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    script-src is the load-bearing directive here: with no inline scripts left
+    in this page, 'self' + esm.sh (the wallet SDK CDN) is all it needs, and it
+    directly blocks the injected onerror="…"/<script> payloads described in
+    SECURITY_AUDIT.md finding #1 from executing even if the underlying
+    innerHTML injection isn't caught somewhere new.
+
+    connect-src/img-src are left at the https:/wss: scheme level rather than
+    an exact host allowlist — Octez Connect's wallet-pairing relay endpoints
+    aren't documented anywhere this could be verified against a live network
+    trace, and avatar/logo URLs are deliberately open (any objkt/hack.tez/
+    Teztree profile can point at its own image host). Narrow both to the
+    exact hosts once a real deploy's console shows what's actually used.
+
+    No frame-ancestors here: a <meta> CSP can't carry it (browsers silently
+    ignore it in that context — confirmed against Chromium while testing this
+    change) — it only works as a real HTTP response header, which a plain
+    GitHub Pages static site can't set. Move to a host that lets you add
+    response headers (Cloudflare Pages, Netlify, etc.) to get clickjacking
+    protection.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Sprinkler</title>
 
   <!-- 1. The Main Icon -->
@@ -138,7 +160,6 @@
   </div>
 
   <script type="module" src="js/main.js"></script>
-  <script type="module" src="js/wallet.js"></script>
 </body>
 
 </html>

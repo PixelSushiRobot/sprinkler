@@ -19,20 +19,24 @@ js/
   dom.js           tiny $(id) helper
   state.js         the nine creators, split method, split math
   avatar.js        identicon generation (rng + SVG/canvas)
+  escape.js        escapeHTML — for any third-party profile data going into innerHTML
+  base58check.js   Tezos address checksum validation
   api.js           TzKT / objkt / hack.tez / Teztree resolution & search
   grid.js          the "your nine" grid, drag-to-reorder, method picker
   search.js        the search box + results dropdown
   presets.js       the 9 / 90 / 900 / Custom pot chips
   garden.js        the shareable "garden" canvas card
   overlay.js       confirm dialog, network toggle, sprinkle flow
-  wallet.js        Octez Connect (tzip-10) integration — isolated, sets window.tez
+  wallet.js        Octez Connect (tzip-10) integration
   main.js          bootstraps everything else
 ```
 
-`wallet.js` is intentionally not imported by the other modules — it's loaded
-as its own `<script type="module">` so a CDN failure there surfaces as an
-error (`window.tezError`) instead of breaking the rest of the app. See
-`SECURITY_AUDIT.md` for a from-an-attacker's-view review of this codebase.
+`wallet.js` catches its own CDN-load failure internally (`walletReady()` /
+`walletLoadError()`) rather than throwing, so a bad CDN response degrades to
+a clear in-app error instead of breaking the rest of the module graph — same
+isolation goal as before, without needing a separate script tag or a
+`window`-global bridge. See `SECURITY_AUDIT.md` for a from-an-attacker's-view
+review of this codebase (now fully remediated).
 
 ## What it does
 

@@ -1,5 +1,6 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
+import { escapeHTML } from './escape.js';
 import { creators, method, yoloLevel, METHODS, setMethod, setYoloLevel, rollYolo, full, computeSplit, displayOrder } from './state.js';
 
 const DICE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.4" fill="currentColor" stroke="none"/></svg>';
@@ -38,8 +39,8 @@ export function renderGrid() {
       numHtml = `<div class="num"><span class="tz">${(pot * pc / 100).toFixed(1)} XTZ</span></div>`;
     }
 
-    const statusHtml = c._loading ? '<div class="nm-sub">resolving…</div>' : (c._err ? '<div class="nm-sub err">' + c._err + '</div>' : '');
-    t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${c.avatar || avatarSVG(c.id)}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="nm">${c.name}</div>${statusHtml}${numHtml}`;
+    const statusHtml = c._loading ? '<div class="nm-sub">resolving…</div>' : (c._err ? '<div class="nm-sub err">' + escapeHTML(c._err) + '</div>' : '');
+    t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${escapeHTML(c.avatar || avatarSVG(c.id))}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="nm">${escapeHTML(c.name)}</div>${statusHtml}${numHtml}`;
     t.dataset.id = c.id;
     t.querySelector('.x').onclick = e => { e.stopPropagation(); creators.splice(origIdx, 1); renderAll(); };
     g.appendChild(t);

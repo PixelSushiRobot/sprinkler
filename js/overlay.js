@@ -3,6 +3,8 @@ import { avatarSVG } from './avatar.js';
 import { NETS, payNet, getPayNetKey, setPayNetKey } from './config.js';
 import { creators, full, computeSplit, setLastHash } from './state.js';
 import { renderGarden } from './garden.js';
+import { escapeHTML } from './escape.js';
+import * as wallet from './wallet.js';
 
 /* overlay flow */
 const SHARE_TEXT = '9 creators. 1 pot. zero spreadsheets. 🌱';
@@ -16,7 +18,7 @@ async function setPayNet(key) {
   if (!NETS[key] || key === getPayNetKey()) return;
   setPayNetKey(key);
   walletAddr = null;
-  try { if (window.tez && window.tez.setNetwork) await window.tez.setNetwork(key); } catch (e) { }
+  try { await wallet.setNetwork(key); } catch (e) { }
   renderNetLabel(); renderWalletState();
 }
 let walletAddr = null;
@@ -24,13 +26,6 @@ let walletAddr = null;
 const shortAddr = a => a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
 function recipientsReady() { return creators.length === 9 && creators.every(c => c.addr && !c._loading && !c._err); }
 export function syncConfirmReady() { if ($('overlay').classList.contains('show')) renderWalletState(); }
-function whenTezReady() {
-  if (window.tez || window.tezError) return Promise.resolve();
-  return new Promise(res => {
-    const t = setTimeout(res, 12000);
-    window.addEventListener('tez-ready', () => { clearTimeout(t); res(); }, { once: true });
-  });
-}
 
 function renderWalletState() {
   const ready = recipientsReady(), note = $('confirmNote');
@@ -58,9 +53,8 @@ function renderWalletState() {
 async function doConnect() {
   const btn = $('connectBtn'); if (btn) { btn.disabled = true; btn.textContent = 'connecting…'; }
   try {
-    await whenTezReady();
-    if (!window.tez) throw new Error(window.tezError || 'wallet library did not load');
-    walletAddr = await window.tez.connect();
+    if (!(await wallet.walletReady())) throw new Error(wallet.walletLoadError() || 'wallet library did not load');
+    walletAddr = await wallet.connect();
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = 'connect wallet'; }
     const m = (e && e.message) || '';
@@ -83,7 +77,7 @@ function openOverlay() {
   $('confirmBtn').textContent = 'sprinkle ' + pot + ' XTZ';
   const idx = creators.map((c, i) => i);
   const maxPc = Math.max(...split, 0.0001);
-  let rows = ''; idx.forEach(i => { const c = creators[i]; const short = shortAddr(c.addr); const addrLine = (c.name && c.name !== short) ? `<span class="rcpt-addr">${short}</span>` : ''; rows += `<tr><td><img class="av" src="${c.avatar || avatarSVG(c.id)}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="rcpt-who"><span class="rcpt-name">${c.name}</span>${addrLine}</div></td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
+  let rows = ''; idx.forEach(i => { const c = creators[i]; const short = shortAddr(c.addr); const addrLine = (c.name && c.name !== short) ? `<span class="rcpt-addr">${escapeHTML(short)}</span>` : ''; rows += `<tr><td><img class="av" src="${escapeHTML(c.avatar || avatarSVG(c.id))}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="rcpt-who"><span class="rcpt-name">${escapeHTML(c.name)}</span>${addrLine}</div></td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
   $('confirmTable').innerHTML = rows;
   $('confirmPane').style.display = ''; $('successPane').style.display = 'none';
   $('overlay').classList.add('show');
@@ -108,7 +102,7 @@ async function doSprinkle() {
   const btn = $('confirmBtn'), label = btn.textContent;
   btn.disabled = true; btn.textContent = 'confirm in your wallet…'; $('sprinkleErr').textContent = '';
   let hash;
-  try { hash = await window.tez.sprinkle(recipients); }
+  try { hash = await wallet.sprinkle(recipients); }
   catch (e) {
     btn.disabled = false; btn.textContent = label;
     const m = (e && e.message) || '';
@@ -128,7 +122,7 @@ async function doSprinkle() {
 function closeOverlay() { $('overlay').classList.remove('show'); }
 $('sprinkleBtn').onclick = openOverlay;
 $('confirmBtn').onclick = doSprinkle;
-whenTezReady().then(async () => { try { if (window.tez) { walletAddr = await window.tez.getActive(); syncConfirmReady(); } } catch (e) { } });
+wallet.walletReady().then(async ok => { try { if (ok) { walletAddr = await wallet.getActive(); syncConfirmReady(); } } catch (e) { } });
 window.addEventListener('tez-account', e => { walletAddr = e.detail || null; syncConfirmReady(); });
 $('ovClose').onclick = closeOverlay;
 document.querySelectorAll('#netTog button').forEach(b => b.onclick = () => setPayNet(b.dataset.net));
