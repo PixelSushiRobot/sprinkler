@@ -76,6 +76,20 @@ tie. Then the remainder is distributed by the method's weights:
   multisig) work **on mainnet**, as long as the contract can receive a plain tez
   transfer. They can't be used on a testnet — see limitations.
 
+### Prefill from a link
+
+`?to=` takes the same list you could paste — addresses and `.tez` names,
+comma / space / semicolon separated — and runs it through the paste path:
+
+```
+https://pixelsushirobot.github.io/sprinkler/?to=alice.tez,bob.hack.tez,tz1…
+```
+
+Fewer than nine leaves open slots to fill by hand; extras past nine, duplicates
+and invalid entries are dropped and counted in the status line. Only
+recipients are settable — no names, avatars, pot, split, network, or wallet
+action come from the URL, so a link can't label an address or move money.
+
 For display, a creator's name prefers a clean username (objkt alias, then
 Teztree handle) over a raw `.tez` domain. Avatars come from each source's own
 image service, so most recipients show a real picture.

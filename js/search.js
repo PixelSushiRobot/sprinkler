@@ -52,8 +52,10 @@ function addFound(addr, name, logo) {
 }
 function clearSearch() { $('search').value = ''; $('results').classList.remove('show'); $('results').innerHTML = ''; }
 function addCreator(v) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(v); if (!c) { $('addErr').textContent = "not a tz address or a .tez name"; return; } if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; } creators.push(c); renderAll(); enrichCreator(c); }
-/* paste a whole list at once — newline / comma / space / semicolon separated */
-function addMany(text) {
+/* paste a whole list at once — newline / comma / space / semicolon separated.
+   Also the ?to= prefill path in main.js, so a link gets exactly the same
+   validation, dedupe and nine-cap as a paste. */
+export function addMany(text) {
   const tokens = text.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
   let added = 0, dup = 0, bad = 0, over = 0;
   for (const tok of tokens) {
