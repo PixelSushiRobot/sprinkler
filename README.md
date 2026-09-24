@@ -6,8 +6,37 @@ Pour one pot of tez across nine creators in a single batched transaction. Pick
 nine, choose how to split, connect a wallet, sign once — everyone gets watered,
 and you get a shareable garden card.
 
-Single-file static site (`index.html`), no build step. The wallet forges and
-signs; Sprinkler never touches the funds.
+Plain static site — `index.html`, `css/style.css`, and a handful of native ES
+modules under `js/`. No bundler, no build step: every `js/*.js` file is
+loaded directly by the browser via `<script type="module">` / `import`. The
+wallet forges and signs; Sprinkler never touches the funds.
+
+```
+index.html        markup only
+css/style.css      all styles
+js/
+  config.js        network config (Shadownet / Mainnet), active payout network
+  dom.js           tiny $(id) helper
+  state.js         the nine creators, split method, split math
+  avatar.js        identicon generation (rng + SVG/canvas)
+  escape.js        escapeHTML — for any third-party profile data going into innerHTML
+  base58check.js   Tezos address checksum validation
+  api.js           TzKT / objkt / hack.tez / Teztree resolution & search
+  grid.js          the "your nine" grid, drag-to-reorder, method picker
+  search.js        the search box + results dropdown
+  presets.js       the 9 / 90 / 900 / Custom pot chips
+  garden.js        the shareable "garden" canvas card
+  overlay.js       confirm dialog, network toggle, sprinkle flow
+  wallet.js        Octez Connect (tzip-10) integration
+  main.js          bootstraps everything else
+```
+
+`wallet.js` catches its own CDN-load failure internally (`walletReady()` /
+`walletLoadError()`) rather than throwing, so a bad CDN response degrades to
+a clear in-app error instead of breaking the rest of the module graph — same
+isolation goal as before, without needing a separate script tag or a
+`window`-global bridge. See `SECURITY_AUDIT.md` for a from-an-attacker's-view
+review of this codebase (now fully remediated).
 
 ## What it does
 
@@ -46,6 +75,20 @@ tie. Then the remainder is distributed by the method's weights:
 - **`KT1` contracts** — smart-contract donation addresses (e.g. a DAO or
   multisig) work **on mainnet**, as long as the contract can receive a plain tez
   transfer. They can't be used on a testnet — see limitations.
+
+### Prefill from a link
+
+`?to=` takes the same list you could paste — addresses and `.tez` names,
+comma / space / semicolon separated — and runs it through the paste path:
+
+```
+https://pixelsushirobot.github.io/sprinkler/?to=alice.tez,bob.hack.tez,tz1…
+```
+
+Fewer than nine leaves open slots to fill by hand; extras past nine, duplicates
+and invalid entries are dropped and counted in the status line. Only
+recipients are settable — no names, avatars, pot, split, network, or wallet
+action come from the URL, so a link can't label an address or move money.
 
 For display, a creator's name prefers a clean username (objkt alias, then
 Teztree handle) over a raw `.tez` domain. Avatars come from each source's own
@@ -114,7 +157,8 @@ is gone; Shadownet replaces it.
 
 ## Deploy
 
-Copy `index.html` (and the icon files it references) to any static host — it's
-served as-is. Note that wallet connect and the live API calls only work from a
-real host, not a sandboxed preview (CSP blocks the CDN import and external
+Copy the whole repo (`index.html`, `css/`, `js/`, and the icon files) to any
+static host — it's served as-is, no build step. Note that wallet connect and
+the live API calls only work from a real host, not a sandboxed preview (CSP
+blocks the CDN import and external
 fetches).
