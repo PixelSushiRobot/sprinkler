@@ -83,6 +83,8 @@ function openOverlay() {
   [...$('confirmTable').querySelectorAll('img.av')].forEach((img, k) => { const c = creators[idx[k]]; img.onerror = () => { img.onerror = null; img.src = avatarSVG(c.id); }; });
   $('confirmPane').style.display = ''; $('successPane').style.display = 'none';
   $('overlay').classList.add('show');
+  // move focus into the dialog — the primary action if it's live, else the first control
+  setTimeout(() => { const f = focusables(); const pref = f.find(el => el.id === 'connectBtn') || f.find(el => el.id === 'confirmBtn' && !el.disabled) || f[0]; if (pref) pref.focus(); }, 0);
 }
 
 /* split the pot into exact-summing mutez amounts (no dust, no rounding drift) */
@@ -121,7 +123,10 @@ async function doSprinkle() {
   $('shareFc').href = 'https://warpcast.com/~/compose?text=' + t;
   $('shareBs').href = 'https://bsky.app/intent/compose?text=' + t;
 }
-function closeOverlay() { $('overlay').classList.remove('show'); }
+function closeOverlay() { $('overlay').classList.remove('show'); const b = $('sprinkleBtn'); if (b) b.focus(); }
+/* focus trap helpers — only visible, enabled controls inside the dialog count
+   (the hidden pane's buttons have no offsetParent, so they're excluded) */
+function focusables() { return [...$('overlay').querySelectorAll('button,a[href],input,[tabindex]:not([tabindex="-1"])')].filter(el => el.offsetParent !== null && !el.disabled); }
 $('sprinkleBtn').onclick = openOverlay;
 $('confirmBtn').onclick = doSprinkle;
 wallet.walletReady().then(async ok => { try { if (ok) { walletAddr = await wallet.getActive(); syncConfirmReady(); } } catch (e) { } });
@@ -130,6 +135,16 @@ $('ovClose').onclick = closeOverlay;
 document.querySelectorAll('#netTog button').forEach(b => b.onclick = () => setPayNet(b.dataset.net));
 renderNetLabel();
 $('overlay').addEventListener('click', e => { if (e.target === $('overlay')) closeOverlay(); });
+// Esc closes; Tab cycles within the dialog so focus never escapes behind the overlay
+$('overlay').addEventListener('keydown', e => {
+  if (!$('overlay').classList.contains('show')) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeOverlay(); return; }
+  if (e.key !== 'Tab') return;
+  const f = focusables(); if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 $('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT), '_blank');
 $('copyBtn').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(SHARE_TEXT); $('copyBtn').textContent = 'copied ✓'; setTimeout(() => $('copyBtn').textContent = 'Copy text', 1400); };
 $('dlBtn').onclick = () => { try { const a = document.createElement('a'); a.download = 'my-garden.png'; a.href = $('gardenCanvas').toDataURL('image/png'); a.click(); } catch (e) { console.error('[sprinkler] card export failed (tainted canvas?):', e); $('sprinkleErr').textContent = "couldn't export the card — try again"; } };

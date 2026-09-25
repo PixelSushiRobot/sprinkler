@@ -76,9 +76,8 @@
           <div class="phead"><span class="bn">01</span>Pick nine</div>
           <p class="slead">Search a name, paste a Tezos wallet, or drop in a whole list. Nine is the magic number. A proper little garden.</p>
           <div class="searchwrap">
-            <input id="search" placeholder="search a name, or paste a Tezos wallet" autocomplete="off" spellcheck="false">
-            <div class="results" id="results"></div>
-            <button type="button" id="browseCampaigns" class="browsebtn">browse TTCrowd campaigns →</button>
+            <input id="search" placeholder="search a name, paste a wallet, or browse campaigns" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="results" aria-autocomplete="list" aria-label="Search creators or browse campaigns">
+            <div class="results" id="results" role="listbox" aria-label="Results"></div>
           </div>
           <div class="err" id="addErr"></div>
         </section>
@@ -121,7 +120,7 @@
 
     <div class="overlay" id="overlay">
       <div class="dialog">
-        <button class="ov-close" id="ovClose" title="close">×</button>
+        <button class="ov-close" id="ovClose" title="close" aria-label="close">×</button>
         <div id="confirmPane">
           <h3>Ready to sprinkle?</h3>
           <div class="rcpt">

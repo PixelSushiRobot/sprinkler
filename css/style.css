@@ -239,21 +239,52 @@
       margin-bottom: 0
     }
 
-    .browsebtn {
-      margin-top: 8px;
+    /* dropdown group header + the browse "fill" action */
+    .rgroup {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 12px;
+      font-size: 9.5px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--dim);
+      background: color-mix(in srgb, var(--bg) 96%, var(--ink) 4%);
+      border-bottom: 1px solid var(--line-2);
+      position: sticky;
+      top: 0
+    }
+
+    .rfill {
       font-family: inherit;
-      font-size: 10px;
+      font-size: 9.5px;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--dim);
       background: transparent;
       border: none;
       padding: 0;
-      cursor: pointer
+      cursor: pointer;
+      white-space: nowrap
     }
 
-    .browsebtn:hover {
+    .rfill:hover {
       color: var(--ink)
+    }
+
+    /* keyboard highlight mirrors :hover so ↑/↓ and mouse look the same */
+    .ritem.active {
+      background: color-mix(in srgb, var(--bg) 90%, var(--ink) 10%)
+    }
+
+    /* visible focus ring for keyboard users (mouse focus stays quiet) */
+    button:focus-visible,
+    a:focus-visible,
+    .tile:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px
     }
 
     .searchwrap input {
