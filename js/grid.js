@@ -40,8 +40,9 @@ export function renderGrid() {
     }
 
     const statusHtml = c._loading ? '<div class="nm-sub">resolving…</div>' : (c._err ? '<div class="nm-sub err">' + escapeHTML(c._err) + '</div>' : '');
-    t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${escapeHTML(c.avatar || avatarSVG(c.id))}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="nm">${escapeHTML(c.name)}</div>${statusHtml}${numHtml}`;
+    t.innerHTML = `<div class="tilefill" style="height:${fillH}%"></div>${crownHtml}<button class="x" title="remove">×</button><img class="av" src="${escapeHTML(c.avatar || avatarSVG(c.id))}" alt=""><div class="nm">${escapeHTML(c.name)}</div>${statusHtml}${numHtml}`;
     t.dataset.id = c.id;
+    const av = t.querySelector('.av'); av.onerror = () => { av.onerror = null; av.src = avatarSVG(c.id); };  // JS fallback (CSP blocks inline onerror)
     t.querySelector('.x').onclick = e => { e.stopPropagation(); creators.splice(origIdx, 1); renderAll(); };
     g.appendChild(t);
   });

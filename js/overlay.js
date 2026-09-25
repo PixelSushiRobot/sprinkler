@@ -77,8 +77,10 @@ function openOverlay() {
   $('confirmBtn').textContent = 'sprinkle ' + pot + ' XTZ';
   const idx = creators.map((c, i) => i);
   const maxPc = Math.max(...split, 0.0001);
-  let rows = ''; idx.forEach(i => { const c = creators[i]; const short = shortAddr(c.addr); const addrLine = (c.name && c.name !== short) ? `<span class="rcpt-addr">${escapeHTML(short)}</span>` : ''; rows += `<tr><td><img class="av" src="${escapeHTML(c.avatar || avatarSVG(c.id))}" onerror="this.onerror=null;this.src='${avatarSVG(c.id)}'" alt=""><div class="rcpt-who"><span class="rcpt-name">${escapeHTML(c.name)}</span>${addrLine}</div></td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
+  let rows = ''; idx.forEach(i => { const c = creators[i]; const short = shortAddr(c.addr); const addrLine = (c.name && c.name !== short) ? `<span class="rcpt-addr">${escapeHTML(short)}</span>` : ''; rows += `<tr><td><img class="av" src="${escapeHTML(c.avatar || avatarSVG(c.id))}" alt=""><div class="rcpt-who"><span class="rcpt-name">${escapeHTML(c.name)}</span>${addrLine}</div></td><td class="bar-cell"><div class="rbar"><i style="width:${(split[i] / maxPc * 100).toFixed(1)}%"></i></div></td><td>${(pot * split[i] / 100).toFixed(2)} XTZ</td></tr>`; });
   $('confirmTable').innerHTML = rows;
+  // JS avatar fallback (CSP blocks inline onerror); imgs render in idx order
+  [...$('confirmTable').querySelectorAll('img.av')].forEach((img, k) => { const c = creators[idx[k]]; img.onerror = () => { img.onerror = null; img.src = avatarSVG(c.id); }; });
   $('confirmPane').style.display = ''; $('successPane').style.display = 'none';
   $('overlay').classList.add('show');
 }
