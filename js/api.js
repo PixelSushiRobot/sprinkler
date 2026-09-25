@@ -150,6 +150,34 @@ async function teztreeSearch(q) {
   const all = await teztreeAll();
   return all.filter(h => (h.handle || '').toLowerCase().includes(t) || (h.displayName || '').toLowerCase().includes(t)).slice(0, 6).map(h => ({ address: h.address, name: h.displayName || h.handle, logo: null, src: 'teztree' }));
 }
+/* TTCrowd campaigns (crowd.thetezos.com). The list has no wallet address — that lives
+   in each campaign's /summary — so campaigns carry a `slug` and resolve on add. */
+const TTC = 'https://crowd.thetezos.com/api/public';
+let ttcrowdCache = null;
+async function ttcrowdList() {
+  if (ttcrowdCache) return ttcrowdCache;
+  try {
+    const j = await fetchJSON(`${TTC}/campaigns`);
+    const arr = Array.isArray(j) ? j : (j && j.campaigns) || [];
+    return (ttcrowdCache = arr.filter(c => c.status === 'active'));
+  } catch (e) { return (ttcrowdCache = []); }
+}
+const campaignRow = c => ({ slug: c.slug, name: c.title, logo: c.logo_url || c.banner_url || null, meta: c.percent != null ? Math.round(c.percent) + '% raised' : '', src: 'ttcrowd' });
+export async function ttcrowdSearch(q) {
+  const t = q.toLowerCase();
+  return (await ttcrowdList()).filter(c => (c.title || '').toLowerCase().includes(t) || (c.tagline || '').toLowerCase().includes(t)).slice(0, 6).map(campaignRow);
+}
+export async function ttcrowdBrowse() { return (await ttcrowdList()).map(campaignRow); }
+/* resolve a campaign's payout wallet (missing from the list), its accepting-state,
+   and a better avatar. XTZ native only — the fa2/USDt donation target is ignored. */
+export async function ttcrowdResolve(slug) {
+  const j = await fetchJSON(`${TTC}/c/${encodeURIComponent(slug)}/summary`);
+  const address = j.recipient_address || (j.recipient_wallets && j.recipient_wallets[0] && j.recipient_wallets[0].address) || null;
+  const closed = !!(j.is_closed || j.not_taking);
+  const st = j.steward || {};
+  const avatar = (j.theme && j.theme.logo_url) || st.avatar_url || (j.theme && j.theme.banner_url) || j.banner_url || null;
+  return { address, closed, avatar };
+}
 /* run all three discovery sources in parallel, merging same-address hits into one
    row that keeps every source tag, the first avatar found, and any builder meta */
 export async function searchAll(q) {

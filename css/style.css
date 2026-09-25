@@ -239,6 +239,23 @@
       margin-bottom: 0
     }
 
+    .browsebtn {
+      margin-top: 8px;
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--dim);
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer
+    }
+
+    .browsebtn:hover {
+      color: var(--ink)
+    }
+
     .searchwrap input {
       width: 100%;
       font-family: inherit;
