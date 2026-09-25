@@ -21,11 +21,11 @@ function rowFound(m) { const short = m.address.slice(0, 8) + '…' + m.address.s
 function rowNote(t) { return `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">${escapeHTML(t)}</div></div></div>`; }
 // TTCrowd campaign row — carries a slug (no wallet yet); the address resolves on add.
 // title/tagline/logo are live values from a public directory, so escape them.
-function rowCampaign(m) { const img = m.logo ? escapeHTML(m.logo) : avatarSVG(m.slug); const sub = ['TTCrowd', m.meta].filter(Boolean).join(' · '); return `<div class="ritem" data-slug="${escapeHTML(m.slug)}" data-name="${escapeHTML(m.name || '')}" data-logo="${escapeHTML(m.logo || '')}"><img class="av" src="${img}" alt=""><div class="info"><div class="rn">${escapeHTML(m.name)}</div><div class="rs">${escapeHTML(sub)}</div></div></div>`; }
+function rowCampaign(m) { const img = m.logo ? escapeHTML(m.logo) : avatarSVG(m.slug); const sub = ['TTCrowd', m.meta].filter(Boolean).join(' · '); return `<div class="ritem" data-slug="${escapeHTML(m.slug)}" data-name="${escapeHTML(m.name || '')}" data-logo="${escapeHTML(m.logo || '')}" data-caddr="${escapeHTML(m.address || '')}" data-closed="${m.closed ? '1' : ''}"><img class="av" src="${img}" alt=""><div class="info"><div class="rn">${escapeHTML(m.name)}</div><div class="rs">${escapeHTML(sub)}</div></div></div>`; }
 function wireResults(box) {
   box.querySelectorAll('.ritem[data-manual]').forEach(el => el.onclick = () => { addCreator(el.dataset.manual); clearSearch(); });
   box.querySelectorAll('.ritem[data-addr]').forEach(el => el.onclick = () => { addFound(el.dataset.addr, el.dataset.name, el.dataset.logo); clearSearch(); });
-  box.querySelectorAll('.ritem[data-slug]').forEach(el => el.onclick = () => { addCampaign(el.dataset.slug, el.dataset.name, el.dataset.logo); clearSearch(); });
+  box.querySelectorAll('.ritem[data-slug]').forEach(el => el.onclick = () => { addCampaign(el.dataset.slug, el.dataset.name, el.dataset.logo, el.dataset.caddr, el.dataset.closed === '1'); clearSearch(); });
   // JS avatar fallback (CSP blocks inline onerror) — rowFound + rowCampaign rows have a remote src
   box.querySelectorAll('.ritem[data-addr] img.av').forEach(img => { const seed = img.closest('.ritem').dataset.addr; img.onerror = () => { img.onerror = null; img.src = avatarSVG(seed); }; });
   box.querySelectorAll('.ritem[data-slug] img.av').forEach(img => { const seed = img.closest('.ritem').dataset.slug; img.onerror = () => { img.onerror = null; img.src = avatarSVG(seed); }; });
@@ -60,17 +60,22 @@ function addFound(addr, name, logo) {
   creators.push(c); renderAll(); enrichCreator(c);
 }
 function clearSearch() { $('search').value = ''; $('results').classList.remove('show'); $('results').innerHTML = ''; }
-// add a TTCrowd campaign: resolve its wallet (missing from the list), then add like a named pick
-async function addCampaign(slug, name, logo) {
+// add a TTCrowd campaign. The list now carries the payout wallet inline, so a picked
+// row adds with no extra call; only fall back to /summary if the address is missing.
+async function addCampaign(slug, name, logo, addr, closed) {
   $('addErr').textContent = '';
   if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; }
-  let info = null;
-  try { info = await ttcrowdResolve(slug); } catch (e) { }
-  if (!info || !info.address) { $('addErr').textContent = "couldn't load that campaign"; return; }
-  if (info.closed) { $('addErr').textContent = "that campaign isn't taking donations right now"; return; }
-  const c = makeCreator(info.address); if (!c) { $('addErr').textContent = 'that campaign wallet looks invalid'; return; }
+  let address = addr || null, isClosed = !!closed, avatar = logo || null;
+  if (!address) {
+    let info = null;
+    try { info = await ttcrowdResolve(slug); } catch (e) { }
+    if (info) { address = info.address; isClosed = isClosed || info.closed; avatar = avatar || info.avatar; }
+  }
+  if (!address) { $('addErr').textContent = "couldn't load that campaign"; return; }
+  if (isClosed) { $('addErr').textContent = "that campaign isn't taking donations right now"; return; }
+  const c = makeCreator(address); if (!c) { $('addErr').textContent = 'that campaign wallet looks invalid'; return; }
   c.name = name || slug; c._named = true;
-  const av = info.avatar || logo; if (av) c.avatar = av;
+  if (avatar) c.avatar = avatar;
   if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; }
   creators.push(c); renderAll(); enrichCreator(c);
 }

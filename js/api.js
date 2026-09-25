@@ -150,8 +150,9 @@ async function teztreeSearch(q) {
   const all = await teztreeAll();
   return all.filter(h => (h.handle || '').toLowerCase().includes(t) || (h.displayName || '').toLowerCase().includes(t)).slice(0, 6).map(h => ({ address: h.address, name: h.displayName || h.handle, logo: null, src: 'teztree' }));
 }
-/* TTCrowd campaigns (crowd.thetezos.com). The list has no wallet address — that lives
-   in each campaign's /summary — so campaigns carry a `slug` and resolve on add. */
+/* TTCrowd campaigns (crowd.thetezos.com). The list now carries the payout wallet
+   (tezos_l1_recipient) and not_taking flag inline, so a picked campaign adds without
+   a second call; /summary stays as a fallback only if a row is missing its address. */
 const TTC = 'https://crowd.thetezos.com/api/public';
 let ttcrowdCache = null;
 async function ttcrowdList() {
@@ -162,7 +163,7 @@ async function ttcrowdList() {
     return (ttcrowdCache = arr.filter(c => c.status === 'active'));
   } catch (e) { return (ttcrowdCache = []); }
 }
-const campaignRow = c => ({ slug: c.slug, name: c.title, logo: c.logo_url || c.banner_url || null, meta: c.percent != null ? Math.round(c.percent) + '% raised' : '', src: 'ttcrowd' });
+const campaignRow = c => ({ slug: c.slug, name: c.title, logo: c.logo_url || c.banner_url || null, address: c.tezos_l1_recipient || null, closed: !!c.not_taking, meta: c.percent != null ? Math.round(c.percent) + '% raised' : '', src: 'ttcrowd' });
 export async function ttcrowdSearch(q) {
   const t = q.toLowerCase();
   return (await ttcrowdList()).filter(c => (c.title || '').toLowerCase().includes(t) || (c.tagline || '').toLowerCase().includes(t)).slice(0, 6).map(campaignRow);
