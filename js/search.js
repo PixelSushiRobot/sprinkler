@@ -1,7 +1,7 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
 import { creators, makeCreator, full } from './state.js';
-import { ipfsURL, searchAll, enrichCreator, ttcrowdSearch, ttcrowdBrowse, ttcrowdResolve, ttcrowdStewards } from './api.js';
+import { ipfsURL, searchAll, enrichCreator, ttcrowdSearch, ttcrowdBrowse, ttcrowdResolve, ttcrowdStewards, warmSearch } from './api.js';
 import { renderAll } from './grid.js';
 import { escapeHTML } from './escape.js';
 
@@ -89,6 +89,9 @@ function renderResults(q) {
   if (!q) { renderBrowse(); return; }
   const c = makeCreator(q);
   const head = c ? (creators.some(x => x.id === c.id) ? rowDup(q, c) : rowManual(q, c)) : '';
+  // a single character blasts every source with a near-match-all query for little
+  // value — wait for a second character before hitting the network
+  if (q.length < 2 && !c) { box.innerHTML = rowNote('keep typing…'); box.classList.add('show'); wireResults(box); return; }
   box.innerHTML = head + rowNote('searching…'); box.classList.add('show'); wireResults(box);
   clearTimeout(searchTimer);
   const seq = ++searchSeq;
@@ -199,7 +202,7 @@ export function addMany(text) {
 }
 
 $('search').addEventListener('input', e => openFor(e.target.value));
-$('search').addEventListener('focus', () => openFor($('search').value));
+$('search').addEventListener('focus', () => { warmSearch(); openFor($('search').value); });
 $('search').addEventListener('paste', e => {
   const text = ((e.clipboardData || window.clipboardData) && (e.clipboardData || window.clipboardData).getData('text')) || '';
   const tokens = text.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);

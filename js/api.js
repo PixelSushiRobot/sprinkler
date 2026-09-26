@@ -201,20 +201,33 @@ export async function ttcrowdStewards(slug) {
   return names;
 }
 /* run all three discovery sources in parallel, merging same-address hits into one
-   row that keeps every source tag, the first avatar found, and any builder meta */
-export async function searchAll(q) {
-  const results = await Promise.allSettled([objktSearch(q), hacktezSearch(q), teztreeSearch(q)]);
-  const byAddr = new Map();
-  for (const r of results) {
-    if (r.status !== 'fulfilled' || !r.value) continue;
-    for (const m of r.value) {
-      if (!m.address) continue;
-      const ex = byAddr.get(m.address);
-      if (!ex) { byAddr.set(m.address, { ...m, srcs: [m.src] }); continue; }
-      if (!ex.srcs.includes(m.src)) ex.srcs.push(m.src);
-      if (!ex.logo && m.logo) ex.logo = m.logo;
-      if (!ex.meta && m.meta) ex.meta = m.meta;
+   row that keeps every source tag, the first avatar found, and any builder meta.
+   Memoized per query for the session — backspacing to a prior term or retyping it
+   renders from cache with no network round-trip, and two in-flight searches for the
+   same term share one set of calls. */
+const searchCache = new Map();
+export function searchAll(q) {
+  const key = q.trim().toLowerCase();
+  if (searchCache.has(key)) return searchCache.get(key);
+  const p = (async () => {
+    const results = await Promise.allSettled([objktSearch(q), hacktezSearch(q), teztreeSearch(q)]);
+    const byAddr = new Map();
+    for (const r of results) {
+      if (r.status !== 'fulfilled' || !r.value) continue;
+      for (const m of r.value) {
+        if (!m.address) continue;
+        const ex = byAddr.get(m.address);
+        if (!ex) { byAddr.set(m.address, { ...m, srcs: [m.src] }); continue; }
+        if (!ex.srcs.includes(m.src)) ex.srcs.push(m.src);
+        if (!ex.logo && m.logo) ex.logo = m.logo;
+        if (!ex.meta && m.meta) ex.meta = m.meta;
+      }
     }
-  }
-  return [...byAddr.values()].map(m => ({ ...m, src: m.srcs.join(' · ') }));
+    return [...byAddr.values()].map(m => ({ ...m, src: m.srcs.join(' · ') }));
+  })();
+  searchCache.set(key, p);
+  return p;
 }
+/* warm the slow cold caches (teztree namespace, campaign list) on focus, so the
+   first keystroke's search isn't paying to fetch them on the critical path */
+export function warmSearch() { teztreeAll().catch(() => { }); ttcrowdList().catch(() => { }); }
