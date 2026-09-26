@@ -192,7 +192,7 @@
       letter-spacing: .1em
     }
 
-    .phead .bn {
+    .phead .step {
       color: var(--dim);
       letter-spacing: .1em
     }
@@ -211,7 +211,7 @@
 
     /* motion — one state transition shared by every interactive control */
     .btn,
-    .mrow,
+    .opt,
     .mbtn,
     .preset,
     .seg button,
@@ -408,7 +408,7 @@
       gap: 6px
     }
 
-    .mrow {
+    .opt {
       display: flex;
       align-items: center;
       width: 100%;
@@ -425,11 +425,11 @@
       cursor: pointer
     }
 
-    .mrow:hover {
+    .opt:hover {
       color: var(--ink)
     }
 
-    .mrow.sel {
+    .opt.sel {
       color: var(--ink);
       background: color-mix(in srgb, var(--panel) 95%, var(--ink) 5%);
       border-color: color-mix(in srgb, var(--ink) 75%, transparent)
@@ -545,7 +545,7 @@
       border-color: color-mix(in srgb, var(--ink) 75%, transparent)
     }
 
-    .mhint {
+    .hint {
       font-size: 10.5px;
       color: var(--dim);
       margin: 12px 0 0;

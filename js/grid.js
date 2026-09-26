@@ -6,7 +6,7 @@ import { creators, method, yoloLevel, METHODS, setMethod, setYoloLevel, rollYolo
 const DICE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.4" fill="currentColor" stroke="none"/></svg>';
 function renderMethods() {
   const m = $('methodbar'); m.innerHTML = '';
-  METHODS.forEach(mt => { const b = document.createElement('button'); b.className = 'mrow' + (method === mt.k ? ' sel' : ''); b.innerHTML = `<span>${mt.n}</span><span class="tag">${mt.t}</span>`; b.onclick = () => { setMethod(mt.k); if (mt.k === 'yolo') rollYolo(); renderAll(); }; m.appendChild(b); });
+  METHODS.forEach(mt => { const b = document.createElement('button'); b.className = 'opt' + (method === mt.k ? ' sel' : ''); b.innerHTML = `<span>${mt.n}</span><span class="tag">${mt.t}</span>`; b.onclick = () => { setMethod(mt.k); if (mt.k === 'yolo') rollYolo(); renderAll(); }; m.appendChild(b); });
   const cur = METHODS.find(x => x.k === method);
   $('mdesc').textContent = cur.d;
   document.documentElement.classList.toggle('ranking', method === 'boss');
