@@ -340,7 +340,7 @@
       right: 0;
       background: var(--panel);
       border: 1px solid var(--line);
-      max-height: 260px;
+      max-height: 400px;
       overflow: auto;
       z-index: 30;
       display: none
