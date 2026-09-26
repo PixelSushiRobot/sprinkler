@@ -14,6 +14,11 @@
       --good: #ececef;
       --bad: #b7b7bd;
       --chip: #16161a;
+      /* motion — one easing curve, three duration roles (see Interaction & motion) */
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --t-state: .12s;
+      --t-move: .22s;
+      --t-reveal: .45s;
     }
 
     :root[data-theme="light"] {
@@ -204,6 +209,23 @@
       cursor: pointer
     }
 
+    /* motion — one state transition shared by every interactive control */
+    .btn,
+    .mrow,
+    .mbtn,
+    .preset,
+    .nettog button,
+    .th-btn,
+    select,
+    .ritem,
+    .mtag,
+    .txlink,
+    .sbtn {
+      transition-property: color, background-color, border-color, opacity;
+      transition-duration: var(--t-state);
+      transition-timing-function: var(--ease);
+    }
+
     .btn {
       text-transform: uppercase;
       letter-spacing: .14em;
@@ -212,8 +234,7 @@
       color: var(--on-accent);
       border: 1px solid var(--accent);
       padding: 13px 20px;
-      font-size: 12px;
-      transition: .12s
+      font-size: 12px
     }
 
     .btn:hover:not(:disabled) {
@@ -410,7 +431,7 @@
 
     .mrow.sel {
       color: var(--ink);
-      background: color-mix(in srgb, var(--bg) 92%, var(--ink) 8%);
+      background: color-mix(in srgb, var(--bg) 95%, var(--ink) 5%);
       border-color: color-mix(in srgb, var(--ink) 55%, transparent)
     }
 
@@ -418,8 +439,9 @@
       margin-left: auto;
       font-size: 9.5px;
       letter-spacing: .12em;
-      color: var(--dim);
-      border: 1px solid var(--line);
+      color: inherit;
+      opacity: .7;
+      border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
       border-radius: 20px;
       line-height: 15px;
       padding: 2px 9px
@@ -625,7 +647,7 @@
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
-      transition: transform .22s cubic-bezier(.2, .8, .2, 1)
+      transition: transform var(--t-move) var(--ease)
     }
 
     /* Photos-style lifted tile */
@@ -643,7 +665,7 @@
     .placeholder {
       border: 1px dashed var(--line);
       background: color-mix(in srgb, var(--bg) 80%, transparent);
-      transition: transform .22s cubic-bezier(.2, .8, .2, 1)
+      transition: transform var(--t-move) var(--ease)
     }
 
     .tilefill {
@@ -653,7 +675,7 @@
       bottom: 0;
       height: 0;
       background: color-mix(in srgb, var(--accent) 16%, transparent);
-      transition: height .45s cubic-bezier(.2, .8, .2, 1);
+      transition: height var(--t-reveal) var(--ease);
       z-index: 0
     }
 
