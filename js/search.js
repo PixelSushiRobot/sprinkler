@@ -11,6 +11,12 @@ import { escapeHTML } from './escape.js';
    keyboard-drivable: ↑/↓ move the highlight, Enter picks, Esc closes. */
 let searchTimer = null, searchSeq = 0, activeIdx = -1;
 
+// #addErr carries two kinds of message: genuine errors (brightened + a [!] marker
+// via .is-error) and neutral outcome summaries ("added 5 · 1 already in"). Route
+// error messages through errShow, summaries/clears through errNote.
+function errShow(t) { const e = $('addErr'); e.textContent = t; e.classList.add('is-error'); }
+function errNote(t) { const e = $('addErr'); e.textContent = t; e.classList.remove('is-error'); }
+
 // rowManual/rowDup render `q`/`c.name` before any external profile lookup has
 // run — `c` here always comes straight from makeCreator(q), whose isAddr/isName
 // regexes already constrain the character set, so escaping is just cheap
@@ -96,12 +102,12 @@ async function renderBrowse() {
 }
 
 function addFound(addr, name, logo) {
-  $('addErr').textContent = '';
-  if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; }
+  errNote('');
+  if (full()) { errShow("that's nine — that's the whole point"); return; }
   const c = makeCreator(addr); if (!c) return;
   if (name) { c.name = name; c._named = true; }
   if (logo) c.avatar = ipfsURL(logo);
-  if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; }
+  if (creators.some(x => x.id === c.id)) { errShow('already in your nine'); return; }
   creators.push(c); renderAll(); enrichCreator(c);
 }
 function clearSearch() { $('search').value = ''; const b = $('results'); b.classList.remove('show'); b.innerHTML = ''; $('search').setAttribute('aria-expanded', 'false'); }
@@ -124,17 +130,17 @@ function tryAddCampaign(m) {
 // add one campaign from a click. The list carries the wallet, so /summary is only
 // a fallback for a row that somehow arrived without one.
 async function addCampaign(slug, name, logo, addr, closed) {
-  $('addErr').textContent = '';
+  errNote('');
   const m = { slug, name, logo: logo || null, address: addr || null, closed: !!closed };
   if (!m.address) { let info = null; try { info = await ttcrowdResolve(slug); } catch (e) { } if (info) { m.address = info.address; m.closed = m.closed || info.closed; m.logo = m.logo || info.avatar; } }
   const st = tryAddCampaign(m);
   const msg = { over: "that's nine — that's the whole point", noaddr: "couldn't load that campaign", closed: "that campaign isn't taking donations right now", invalid: 'that campaign wallet looks invalid', dup: 'already in your nine' };
-  if (st !== 'added') { $('addErr').textContent = msg[st] || ''; return; }
+  if (st !== 'added') { errShow(msg[st] || ''); return; }
   renderAll();
 }
 // fill the remaining slots with active campaigns (stops at nine)
 async function fillCampaigns() {
-  $('addErr').textContent = '';
+  errNote('');
   let camps = []; try { camps = await ttcrowdBrowse(); } catch (e) { }
   let added = 0, dup = 0, closed = 0;
   for (const m of camps) { const st = tryAddCampaign(m); if (st === 'added') added++; else if (st === 'dup') dup++; else if (st === 'closed') closed++; else if (st === 'over') break; }
@@ -145,9 +151,9 @@ async function fillCampaigns() {
   if (closed) bits.push(`${closed} not taking donations`);
   if (!bits.length) bits.push('no active campaigns to add');
   else if (full()) bits.push('nine full');
-  $('addErr').textContent = bits.join(' · ');
+  errNote(bits.join(' · '));
 }
-function addCreator(v) { $('addErr').textContent = ''; if (full()) { $('addErr').textContent = "that's nine — that's the whole point"; return; } const c = makeCreator(v); if (!c) { $('addErr').textContent = "not a tz address or a .tez name"; return; } if (creators.some(x => x.id === c.id)) { $('addErr').textContent = 'already in your nine'; return; } creators.push(c); renderAll(); enrichCreator(c); }
+function addCreator(v) { errNote(''); if (full()) { errShow("that's nine — that's the whole point"); return; } const c = makeCreator(v); if (!c) { errShow("not a tz address or a .tez name"); return; } if (creators.some(x => x.id === c.id)) { errShow('already in your nine'); return; } creators.push(c); renderAll(); enrichCreator(c); }
 /* paste a whole list at once — newline / comma / space / semicolon separated.
    Also the ?to= prefill path in main.js, so a link gets exactly the same
    validation, dedupe and nine-cap as a paste. */
@@ -167,7 +173,7 @@ export function addMany(text) {
   if (dup) bits.push(`${dup} already in`);
   if (bad) bits.push(`${bad} not valid`);
   if (over) bits.push(`${over} over the nine`);
-  $('addErr').textContent = bits.join(' · ');
+  errNote(bits.join(' · '));
   clearSearch();
 }
 

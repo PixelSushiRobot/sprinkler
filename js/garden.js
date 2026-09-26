@@ -14,7 +14,7 @@ function drawImgCover(ctx, img, x, y, size) {
 }
 function drawGarden(order, imgs) {
   const cv = $('gardenCanvas'); if (!cv) return; const ctx = cv.getContext('2d'), S = 1080, cs = getComputedStyle(document.documentElement);
-  const bg = (cs.getPropertyValue('--box') || '#fff').trim(), ink = (cs.getPropertyValue('--ink') || '#111').trim(), sub = (cs.getPropertyValue('--muted') || '#777').trim(), line = (cs.getPropertyValue('--line') || '#ccc').trim();
+  const bg = (cs.getPropertyValue('--panel') || '#fff').trim(), ink = (cs.getPropertyValue('--ink') || '#111').trim(), sub = (cs.getPropertyValue('--muted') || '#777').trim(), line = (cs.getPropertyValue('--line') || '#ccc').trim();
   ctx.clearRect(0, 0, S, S); ctx.fillStyle = bg; ctx.fillRect(0, 0, S, S);
   ctx.strokeStyle = line; ctx.lineWidth = 3; ctx.strokeRect(14, 14, S - 28, S - 28);
   ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.font = '600 58px "SF Mono", Menlo, monospace'; ctx.fillText('MY GARDEN', 66, 106);

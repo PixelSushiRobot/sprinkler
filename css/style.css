@@ -1,10 +1,10 @@
     :root,
     :root[data-theme="dark"] {
       --bg: #0a0a0b;
-      --box: #0e0e10;
-      --bg2: #111113;
+      --panel: #0e0e10;
+      --inset: #111113;
       --line: #2a2a2e;
-      --line-2: #1c1c20;
+      --divider: #1c1c20;
       --ink: #ececef;
       --muted: #7c7c85;
       --dim: #55555d;
@@ -23,10 +23,10 @@
 
     :root[data-theme="light"] {
       --bg: #f4f4f2;
-      --box: #ffffff;
-      --bg2: #ffffff;
+      --panel: #ffffff;
+      --inset: #ffffff;
       --line: #d4d4cf;
-      --line-2: #e6e6e1;
+      --divider: #e6e6e1;
       --ink: #16161a;
       --muted: #6a6a70;
       --dim: #9a9a9f;
@@ -41,10 +41,10 @@
     @media (prefers-color-scheme: light) {
       :root:not([data-theme]) {
         --bg: #f4f4f2;
-        --box: #ffffff;
-        --bg2: #ffffff;
+        --panel: #ffffff;
+        --inset: #ffffff;
         --line: #d4d4cf;
-        --line-2: #e6e6e1;
+        --divider: #e6e6e1;
         --ink: #16161a;
         --muted: #6a6a70;
         --dim: #9a9a9f;
@@ -146,8 +146,8 @@
       height: 15px
     }
 
-    .box {
-      background: var(--box);
+    .panel {
+      background: var(--panel);
       border: 1px solid var(--line);
       padding: 18px
     }
@@ -183,7 +183,7 @@
       align-items: center;
       gap: 8px;
       padding-bottom: 10px;
-      border-bottom: 1px solid var(--line-2)
+      border-bottom: 1px solid var(--divider)
     }
 
     .phead .count {
@@ -214,11 +214,11 @@
     .mrow,
     .mbtn,
     .preset,
-    .nettog button,
+    .seg button,
     .th-btn,
     select,
     .ritem,
-    .mtag,
+    .tag,
     .txlink,
     .sbtn {
       transition-property: color, background-color, border-color, opacity;
@@ -280,8 +280,8 @@
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--dim);
-      background: color-mix(in srgb, var(--box) 96%, var(--ink) 4%);
-      border-bottom: 1px solid var(--line-2);
+      background: color-mix(in srgb, var(--panel) 96%, var(--ink) 4%);
+      border-bottom: 1px solid var(--divider);
       position: sticky;
       top: 0
     }
@@ -305,7 +305,7 @@
 
     /* keyboard highlight mirrors :hover so ↑/↓ and mouse look the same */
     .ritem.active {
-      background: color-mix(in srgb, var(--box) 90%, var(--ink) 10%)
+      background: color-mix(in srgb, var(--panel) 90%, var(--ink) 10%)
     }
 
     /* visible focus ring for keyboard users (mouse focus stays quiet) */
@@ -337,7 +337,7 @@
       top: calc(100% + 4px);
       left: 0;
       right: 0;
-      background: var(--box);
+      background: var(--panel);
       border: 1px solid var(--line);
       max-height: 260px;
       overflow: auto;
@@ -355,7 +355,7 @@
       gap: 10px;
       padding: 9px 12px;
       cursor: pointer;
-      border-bottom: 1px solid var(--line-2)
+      border-bottom: 1px solid var(--divider)
     }
 
     .ritem:last-child {
@@ -363,7 +363,7 @@
     }
 
     .ritem:hover {
-      background: color-mix(in srgb, var(--box) 94%, var(--ink) 6%)
+      background: color-mix(in srgb, var(--panel) 94%, var(--ink) 6%)
     }
 
     .ritem .av {
@@ -431,11 +431,11 @@
 
     .mrow.sel {
       color: var(--ink);
-      background: color-mix(in srgb, var(--box) 95%, var(--ink) 5%);
+      background: color-mix(in srgb, var(--panel) 95%, var(--ink) 5%);
       border-color: color-mix(in srgb, var(--ink) 75%, transparent)
     }
 
-    .mtag {
+    .tag {
       margin-left: auto;
       font-size: 9.5px;
       letter-spacing: .12em;
@@ -465,7 +465,7 @@
 
     .mbtn.sel {
       color: var(--ink);
-      background: color-mix(in srgb, var(--box) 96%, var(--ink) 4%)
+      background: color-mix(in srgb, var(--panel) 96%, var(--ink) 4%)
     }
 
     .mbtn.reroll {
@@ -541,7 +541,7 @@
 
     .preset.sel {
       color: var(--ink);
-      background: color-mix(in srgb, var(--box) 95%, var(--ink) 5%);
+      background: color-mix(in srgb, var(--panel) 95%, var(--ink) 5%);
       border-color: color-mix(in srgb, var(--ink) 75%, transparent)
     }
 
@@ -570,7 +570,7 @@
 
     .adv {
       margin: 0 0 14px;
-      border-top: 1px solid var(--line-2);
+      border-top: 1px solid var(--divider);
       padding-top: 12px
     }
 
@@ -637,7 +637,7 @@
       position: relative;
       overflow: hidden;
       border: 1px solid var(--line);
-      background: var(--bg2);
+      background: var(--inset);
       padding: 16px 12px 13px;
       display: flex;
       flex-direction: column;
@@ -791,7 +791,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--line-2);
+      color: var(--divider);
       font-size: 22px
     }
 
@@ -821,6 +821,15 @@
       margin-top: 12px
     }
 
+    /* genuine errors (not neutral summaries) brighten + carry the [!] marker */
+    .err.is-error {
+      color: var(--ink)
+    }
+
+    .err.is-error::before {
+      content: "[!] "
+    }
+
     /* overlay */
     .overlay {
       position: fixed;
@@ -840,7 +849,7 @@
     }
 
     .dialog {
-      background: var(--box);
+      background: var(--panel);
       border: 1px solid var(--line);
       width: 100%;
       max-width: 400px;
@@ -857,7 +866,7 @@
       width: 26px;
       height: 26px;
       border: 1px solid var(--line);
-      background: var(--box);
+      background: var(--panel);
       color: var(--muted);
       font-size: 14px;
       display: flex;
@@ -878,11 +887,11 @@
       margin: 0 0 14px;
       color: var(--muted);
       padding-bottom: 10px;
-      border-bottom: 1px solid var(--line-2)
+      border-bottom: 1px solid var(--divider)
     }
 
     .rcpt {
-      border: 1px solid var(--line-2);
+      border: 1px solid var(--divider);
       margin-bottom: 14px
     }
 
@@ -892,7 +901,7 @@
       align-items: center;
       gap: 12px;
       padding: 10px 12px;
-      border-bottom: 1px solid var(--line-2)
+      border-bottom: 1px solid var(--divider)
     }
 
     .rcpt-row:last-child {
@@ -913,13 +922,13 @@
       word-break: break-all
     }
 
-    .nettog {
+    .seg {
       display: inline-flex;
       border: 1px solid var(--line);
       overflow: hidden
     }
 
-    .nettog button {
+    .seg button {
       font: inherit;
       font-size: 9.5px;
       letter-spacing: .1em;
@@ -931,15 +940,15 @@
       cursor: pointer
     }
 
-    .nettog button+button {
+    .seg button+button {
       border-left: 1px solid var(--line)
     }
 
-    .nettog button:hover {
+    .seg button:hover {
       color: var(--ink)
     }
 
-    .nettog button.on {
+    .seg button.on {
       background: var(--accent);
       color: var(--on-accent)
     }
@@ -952,7 +961,7 @@
 
     .ov-table td {
       padding: 5px 0;
-      border-bottom: 1px solid var(--line-2);
+      border-bottom: 1px solid var(--divider);
       font-size: 11.5px;
       vertical-align: middle
     }
@@ -995,7 +1004,7 @@
 
     .rbar {
       height: 6px;
-      background: var(--line-2);
+      background: var(--divider);
       border: 1px solid var(--line);
       overflow: hidden
     }
@@ -1094,7 +1103,7 @@
     }
 
     .share-box {
-      background: var(--bg2);
+      background: var(--inset);
       border: 1px solid var(--line);
       padding: 11px 12px;
       font-size: 11.5px;
