@@ -9,7 +9,10 @@
       --muted: #7c7c85;
       --dim: #55555d;
       --accent: #ececef;
+      --accent-dim: #55555d;
       --on-accent: #0a0a0b;
+      --good: #ececef;
+      --bad: #b7b7bd;
       --chip: #16161a;
     }
 
@@ -23,7 +26,10 @@
       --muted: #6a6a70;
       --dim: #9a9a9f;
       --accent: #16161a;
+      --accent-dim: #9a9a9f;
       --on-accent: #ffffff;
+      --good: #16161a;
+      --bad: #55555a;
       --chip: #f0f0ec;
     }
 
@@ -38,7 +44,10 @@
         --muted: #6a6a70;
         --dim: #9a9a9f;
         --accent: #16161a;
+        --accent-dim: #9a9a9f;
         --on-accent: #ffffff;
+        --good: #16161a;
+        --bad: #55555a;
         --chip: #f0f0ec;
       }
     }
@@ -63,7 +72,7 @@
     }
 
     .wrap {
-      max-width: 1080px;
+      max-width: 1160px;
       margin: 0 auto
     }
 
@@ -79,7 +88,7 @@
     }
 
     h1 {
-      font-size: clamp(22px, 3.2vw, 32px);
+      font-size: clamp(22px, 3.2vw, 34px);
       line-height: 1.05;
       margin: 0 0 10px;
       letter-spacing: -.01em;
@@ -135,26 +144,26 @@
     .box {
       background: var(--box);
       border: 1px solid var(--line);
-      padding: 16px
+      padding: 18px
     }
 
     .col {
       display: flex;
       flex-direction: column;
-      gap: 20px
+      gap: 18px
     }
 
     .pcols {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 18px;
       align-items: start
     }
 
-    @media (max-width:760px) {
+    @media (max-width:860px) {
       .pcols {
         grid-template-columns: 1fr;
-        gap: 20px
+        gap: 18px
       }
     }
 
@@ -202,7 +211,7 @@
       background: var(--accent);
       color: var(--on-accent);
       border: 1px solid var(--accent);
-      padding: 12px 18px;
+      padding: 13px 20px;
       font-size: 12px;
       transition: .12s
     }
@@ -383,7 +392,7 @@
       align-items: center;
       width: 100%;
       text-align: left;
-      border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+      border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
       background: transparent;
       color: var(--muted);
       font-family: inherit;
@@ -411,7 +420,9 @@
       letter-spacing: .12em;
       color: var(--dim);
       border: 1px solid var(--line);
-      padding: 2px 7px
+      border-radius: 20px;
+      line-height: 15px;
+      padding: 2px 9px
     }
 
     .mbtn {
@@ -882,7 +893,6 @@
     .nettog {
       display: inline-flex;
       border: 1px solid var(--line);
-      border-radius: 6px;
       overflow: hidden
     }
 
@@ -907,8 +917,8 @@
     }
 
     .nettog button.on {
-      background: var(--ink);
-      color: var(--bg)
+      background: var(--accent);
+      color: var(--on-accent)
     }
 
     .ov-table {
@@ -983,8 +993,12 @@
     }
 
     .note.err {
-      color: #c0392b;
+      color: var(--ink);
       margin-top: 6px
+    }
+
+    .note.err::before {
+      content: "[!] "
     }
 
     .note.err:empty {
@@ -1013,7 +1027,11 @@
     }
 
     .nm-sub.err {
-      color: #c0392b
+      color: var(--ink)
+    }
+
+    .nm-sub.err::before {
+      content: "[!] "
     }
 
     #successPane {
