@@ -1,7 +1,7 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
 import { creators, makeCreator, full } from './state.js';
-import { ipfsURL, searchAll, enrichCreator, ttcrowdSearch, ttcrowdBrowse, ttcrowdResolve } from './api.js';
+import { ipfsURL, searchAll, enrichCreator, ttcrowdSearch, ttcrowdBrowse, ttcrowdResolve, ttcrowdStewards } from './api.js';
 import { renderAll } from './grid.js';
 import { escapeHTML } from './escape.js';
 
@@ -31,7 +31,7 @@ function rowNote(t) { return `<div class="ritem" style="cursor:default"><div cla
 // TTCrowd campaign row — carries the payout wallet inline (data-caddr) so a pick
 // adds with no extra call. title/tagline/logo are live public-directory values.
 // The trailing .rlink opens the campaign's TTCrowd page instead of adding it.
-function rowCampaign(m) { const img = m.logo ? escapeHTML(m.logo) : avatarSVG(m.slug); const sub = ['TTCrowd', m.meta].filter(Boolean).join(' · '); const tag = m.tagline ? `<div class="rtag">${escapeHTML(m.tagline)}</div>` : ''; const url = 'https://crowd.thetezos.com/c/' + encodeURIComponent(m.slug); return `<div class="ritem" data-slug="${escapeHTML(m.slug)}" data-name="${escapeHTML(m.name || '')}" data-logo="${escapeHTML(m.logo || '')}" data-caddr="${escapeHTML(m.address || '')}" data-closed="${m.closed ? '1' : ''}"><img class="av" src="${img}" alt=""><div class="info"><div class="rn">${escapeHTML(m.name)}</div>${tag}<div class="rs">${escapeHTML(sub)}</div></div><a class="rlink" href="${escapeHTML(url)}" target="_blank" rel="noopener" tabindex="-1" title="Open on TTCrowd" aria-label="Open ${escapeHTML(m.name || 'campaign')} on TTCrowd">↗</a></div>`; }
+function rowCampaign(m) { const img = m.logo ? escapeHTML(m.logo) : avatarSVG(m.slug); const sub = ['TTCrowd', m.meta].filter(Boolean).join(' · '); const url = 'https://crowd.thetezos.com/c/' + encodeURIComponent(m.slug); return `<div class="ritem" data-slug="${escapeHTML(m.slug)}" data-name="${escapeHTML(m.name || '')}" data-logo="${escapeHTML(m.logo || '')}" data-caddr="${escapeHTML(m.address || '')}" data-closed="${m.closed ? '1' : ''}"><img class="av" src="${img}" alt=""><div class="info"><div class="rn">${escapeHTML(m.name)}</div><div class="rs">${escapeHTML(sub)}</div></div><a class="rlink" href="${escapeHTML(url)}" target="_blank" rel="noopener" tabindex="-1" title="Open on TTCrowd" aria-label="Open ${escapeHTML(m.name || 'campaign')} on TTCrowd">↗</a></div>`; }
 // group header inside the dropdown; the browse header also carries the fill action
 function rowGroup(t, fill) { return `<div class="rgroup"><span>${escapeHTML(t)}</span>${fill ? '<button type="button" class="rfill" data-fill>fill all</button>' : ''}</div>`; }
 
@@ -68,6 +68,22 @@ function wireResults(box) {
 // open the right dropdown state for the current input: search when typing, browse when empty
 function openFor(v) { if (v.trim()) renderResults(v); else renderBrowse(); }
 
+/* progressive author line — the list carries no steward, so once campaign rows are
+   on screen, fetch each campaign's stewards from /summary in parallel and patch them
+   onto the meta line as they land (same "resolve live" pattern as avatar upgrades).
+   Matching rows by data-slug + the seq guard keeps a stale render from being touched. */
+function enrichStewards(box, camps, seq) {
+  const rows = new Map([...box.querySelectorAll('.ritem[data-slug]')].map(r => [r.dataset.slug, r]));
+  camps.forEach(m => {
+    const row = rows.get(m.slug); if (!row) return;
+    ttcrowdStewards(m.slug).then(names => {
+      if (seq !== searchSeq || !names.length) return;
+      const rs = row.querySelector('.rs'); if (!rs) return;
+      rs.textContent = ['TTCrowd', m.meta, 'by ' + names.join(', ')].filter(Boolean).join(' · ');
+    }).catch(() => { });
+  });
+}
+
 function renderResults(q) {
   const box = $('results'); q = q.trim();
   if (!q) { renderBrowse(); return; }
@@ -89,6 +105,7 @@ function renderResults(q) {
     if (campRows.length) html += (both ? rowGroup('crowdfunding campaigns') : '') + campRows.join('');
     if (!html) html = rowNote('no matches — paste a tz1… or a .tez name');
     box.innerHTML = html; box.classList.add('show'); wireResults(box);
+    enrichStewards(box, camps, seq);
   }, 250);
 }
 
@@ -102,6 +119,7 @@ async function renderBrowse() {
   if (seq !== searchSeq) return;                        // a keystroke started a real search meanwhile
   box.innerHTML = camps.length ? rowGroup('crowdfunding campaigns', true) + camps.map(rowCampaign).join('') : rowNote('no active campaigns right now');
   box.classList.add('show'); wireResults(box);
+  enrichStewards(box, camps, seq);
 }
 
 function addFound(addr, name, logo) {

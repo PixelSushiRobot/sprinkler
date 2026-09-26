@@ -163,21 +163,42 @@ async function ttcrowdList() {
     return (ttcrowdCache = arr.filter(c => c.status === 'active'));
   } catch (e) { return (ttcrowdCache = []); }
 }
-const campaignRow = c => ({ slug: c.slug, name: c.title, tagline: c.tagline || '', logo: c.logo_url || c.banner_url || null, address: c.tezos_l1_recipient || null, closed: !!c.not_taking, meta: c.percent != null ? Math.round(c.percent) + '% raised' : '', src: 'ttcrowd' });
+const campaignRow = c => ({ slug: c.slug, name: c.title, logo: c.logo_url || c.banner_url || null, address: c.tezos_l1_recipient || null, closed: !!c.not_taking, meta: c.percent != null ? Math.round(c.percent) + '% raised' : '', src: 'ttcrowd' });
 export async function ttcrowdSearch(q) {
   const t = q.toLowerCase();
   return (await ttcrowdList()).filter(c => (c.title || '').toLowerCase().includes(t) || (c.tagline || '').toLowerCase().includes(t)).slice(0, 6).map(campaignRow);
 }
 export async function ttcrowdBrowse() { return (await ttcrowdList()).map(campaignRow); }
+/* one cached /summary fetch per slug, shared by resolve + steward lookups. A failed
+   fetch caches as null so re-opening the dropdown doesn't hammer the API. */
+const summaryCache = new Map();
+function ttcrowdSummary(slug) {
+  if (!summaryCache.has(slug)) summaryCache.set(slug, fetchJSON(`${TTC}/c/${encodeURIComponent(slug)}/summary`).catch(() => null));
+  return summaryCache.get(slug);
+}
 /* resolve a campaign's payout wallet (missing from the list), its accepting-state,
    and a better avatar. XTZ native only — the fa2/USDt donation target is ignored. */
 export async function ttcrowdResolve(slug) {
-  const j = await fetchJSON(`${TTC}/c/${encodeURIComponent(slug)}/summary`);
+  const j = await ttcrowdSummary(slug);
+  if (!j) throw new Error('summary unavailable');
   const address = j.recipient_address || (j.recipient_wallets && j.recipient_wallets[0] && j.recipient_wallets[0].address) || null;
   const closed = !!(j.is_closed || j.not_taking);
   const st = j.steward || {};
   const avatar = (j.theme && j.theme.logo_url) || st.avatar_url || (j.theme && j.theme.banner_url) || j.banner_url || null;
   return { address, closed, avatar };
+}
+/* campaign stewards (the people running it) — only in /summary, not the list.
+   Returns display names for every steward; a campaign with more than one is uncommon. */
+export async function ttcrowdStewards(slug) {
+  const j = await ttcrowdSummary(slug);
+  if (!j) return [];
+  const arr = Array.isArray(j.stewards) && j.stewards.length ? j.stewards : (j.steward ? [j.steward] : []);
+  const seen = new Set(), names = [];
+  for (const s of arr) {
+    const n = ((s && (s.name || s.alias || s.tzdomain)) || '').trim();
+    if (n && !seen.has(n)) { seen.add(n); names.push(n); }
+  }
+  return names;
 }
 /* run all three discovery sources in parallel, merging same-address hits into one
    row that keeps every source tag, the first avatar found, and any builder meta */
