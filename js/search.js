@@ -30,9 +30,10 @@ function rowFound(m) { const short = m.address.slice(0, 8) + '…' + m.address.s
 function rowNote(t) { return `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">${escapeHTML(t)}</div></div></div>`; }
 // TTCrowd campaign row — carries the payout wallet inline (data-caddr) so a pick
 // adds with no extra call. title/tagline/logo are live public-directory values.
-function rowCampaign(m) { const img = m.logo ? escapeHTML(m.logo) : avatarSVG(m.slug); const sub = ['TTCrowd', m.meta].filter(Boolean).join(' · '); return `<div class="ritem" data-slug="${escapeHTML(m.slug)}" data-name="${escapeHTML(m.name || '')}" data-logo="${escapeHTML(m.logo || '')}" data-caddr="${escapeHTML(m.address || '')}" data-closed="${m.closed ? '1' : ''}"><img class="av" src="${img}" alt=""><div class="info"><div class="rn">${escapeHTML(m.name)}</div><div class="rs">${escapeHTML(sub)}</div></div></div>`; }
+// The trailing .rlink opens the campaign's TTCrowd page instead of adding it.
+function rowCampaign(m) { const img = m.logo ? escapeHTML(m.logo) : avatarSVG(m.slug); const sub = ['TTCrowd', m.meta].filter(Boolean).join(' · '); const tag = m.tagline ? `<div class="rtag">${escapeHTML(m.tagline)}</div>` : ''; const url = 'https://crowd.thetezos.com/c/' + encodeURIComponent(m.slug); return `<div class="ritem" data-slug="${escapeHTML(m.slug)}" data-name="${escapeHTML(m.name || '')}" data-logo="${escapeHTML(m.logo || '')}" data-caddr="${escapeHTML(m.address || '')}" data-closed="${m.closed ? '1' : ''}"><img class="av" src="${img}" alt=""><div class="info"><div class="rn">${escapeHTML(m.name)}</div>${tag}<div class="rs">${escapeHTML(sub)}</div></div><a class="rlink" href="${escapeHTML(url)}" target="_blank" rel="noopener" tabindex="-1" title="Open on TTCrowd" aria-label="Open ${escapeHTML(m.name || 'campaign')} on TTCrowd">↗</a></div>`; }
 // group header inside the dropdown; the browse header also carries the fill action
-function rowGroup(t, fill) { return `<div class="rgroup"><span>${escapeHTML(t)}</span>${fill ? '<button type="button" class="rfill" data-fill>fill with active campaigns</button>' : ''}</div>`; }
+function rowGroup(t, fill) { return `<div class="rgroup"><span>${escapeHTML(t)}</span>${fill ? '<button type="button" class="rfill" data-fill>fill all</button>' : ''}</div>`; }
 
 /* keyboard highlight — the pickable rows are exactly the clickable ones */
 function pickables(box) { return [...box.querySelectorAll('.ritem[data-manual],.ritem[data-addr],.ritem[data-slug]')]; }
@@ -56,6 +57,8 @@ function wireResults(box) {
   box.querySelectorAll('.ritem[data-addr]').forEach(el => el.onclick = () => { addFound(el.dataset.addr, el.dataset.name, el.dataset.logo); clearSearch(); });
   box.querySelectorAll('.ritem[data-slug]').forEach(el => el.onclick = () => { addCampaign(el.dataset.slug, el.dataset.name, el.dataset.logo, el.dataset.caddr, el.dataset.closed === '1'); clearSearch(); });
   box.querySelectorAll('[data-fill]').forEach(el => el.onclick = () => fillCampaigns());
+  // the campaign "learn more" link opens the TTCrowd page — don't let it bubble to the row's add handler
+  box.querySelectorAll('.rlink').forEach(a => a.onclick = e => e.stopPropagation());
   // JS avatar fallback (CSP blocks inline onerror) — rowFound + rowCampaign rows have a remote src
   box.querySelectorAll('.ritem[data-addr] img.av').forEach(img => { const seed = img.closest('.ritem').dataset.addr; img.onerror = () => { img.onerror = null; img.src = avatarSVG(seed); }; });
   box.querySelectorAll('.ritem[data-slug] img.av').forEach(img => { const seed = img.closest('.ritem').dataset.slug; img.onerror = () => { img.onerror = null; img.src = avatarSVG(seed); }; });
@@ -83,7 +86,7 @@ function renderResults(q) {
     const both = liveRows.length && campRows.length;   // only label the split when there's something to split
     let html = head;
     if (liveRows.length) html += (both ? rowGroup('creators') : '') + liveRows.join('');
-    if (campRows.length) html += (both ? rowGroup('campaigns') : '') + campRows.join('');
+    if (campRows.length) html += (both ? rowGroup('crowdfunding campaigns') : '') + campRows.join('');
     if (!html) html = rowNote('no matches — paste a tz1… or a .tez name');
     box.innerHTML = html; box.classList.add('show'); wireResults(box);
   }, 250);
@@ -97,7 +100,7 @@ async function renderBrowse() {
   let camps = [];
   try { camps = await ttcrowdBrowse(); } catch (e) { }
   if (seq !== searchSeq) return;                        // a keystroke started a real search meanwhile
-  box.innerHTML = camps.length ? rowGroup('campaigns on TTCrowd', true) + camps.map(rowCampaign).join('') : rowNote('no active campaigns right now');
+  box.innerHTML = camps.length ? rowGroup('crowdfunding campaigns', true) + camps.map(rowCampaign).join('') : rowNote('no active campaigns right now');
   box.classList.add('show'); wireResults(box);
 }
 

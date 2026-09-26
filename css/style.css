@@ -219,6 +219,8 @@
     select,
     .ritem,
     .tag,
+    .rfill,
+    .rlink,
     .txlink,
     .sbtn {
       transition-property: color, background-color, border-color, opacity;
@@ -275,12 +277,12 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 7px 12px;
+      padding: 9px 12px 7px;
       font-size: 9.5px;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--dim);
-      background: color-mix(in srgb, var(--panel) 96%, var(--ink) 4%);
+      background: var(--panel);
       border-bottom: 1px solid var(--divider);
       position: sticky;
       top: 0
@@ -288,13 +290,13 @@
 
     .rfill {
       font-family: inherit;
-      font-size: 9.5px;
+      font-size: 9px;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--dim);
       background: transparent;
-      border: none;
-      padding: 0;
+      border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
+      padding: 4px 9px;
       cursor: pointer;
       white-space: nowrap
     }
@@ -391,6 +393,31 @@
       text-transform: uppercase;
       letter-spacing: .08em;
       margin-top: 2px
+    }
+
+    /* campaign tagline — a readable sentence, not the uppercase meta line */
+    .ritem .rtag {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px
+    }
+
+    /* "learn more" link on a campaign row — opens the TTCrowd page, doesn't add */
+    .rlink {
+      flex: none;
+      color: var(--dim);
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1;
+      padding: 4px 4px 4px 8px
+    }
+
+    .rlink:hover {
+      color: var(--ink)
     }
 
     /* controls */

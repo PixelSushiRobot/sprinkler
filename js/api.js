@@ -163,7 +163,7 @@ async function ttcrowdList() {
     return (ttcrowdCache = arr.filter(c => c.status === 'active'));
   } catch (e) { return (ttcrowdCache = []); }
 }
-const campaignRow = c => ({ slug: c.slug, name: c.title, logo: c.logo_url || c.banner_url || null, address: c.tezos_l1_recipient || null, closed: !!c.not_taking, meta: c.percent != null ? Math.round(c.percent) + '% raised' : '', src: 'ttcrowd' });
+const campaignRow = c => ({ slug: c.slug, name: c.title, tagline: c.tagline || '', logo: c.logo_url || c.banner_url || null, address: c.tezos_l1_recipient || null, closed: !!c.not_taking, meta: c.percent != null ? Math.round(c.percent) + '% raised' : '', src: 'ttcrowd' });
 export async function ttcrowdSearch(q) {
   const t = q.toLowerCase();
   return (await ttcrowdList()).filter(c => (c.title || '').toLowerCase().includes(t) || (c.tagline || '').toLowerCase().includes(t)).slice(0, 6).map(campaignRow);
