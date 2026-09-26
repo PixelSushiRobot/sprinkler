@@ -280,7 +280,7 @@
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--dim);
-      background: color-mix(in srgb, var(--bg) 96%, var(--ink) 4%);
+      background: color-mix(in srgb, var(--box) 96%, var(--ink) 4%);
       border-bottom: 1px solid var(--line-2);
       position: sticky;
       top: 0
@@ -305,7 +305,7 @@
 
     /* keyboard highlight mirrors :hover so ↑/↓ and mouse look the same */
     .ritem.active {
-      background: color-mix(in srgb, var(--bg) 90%, var(--ink) 10%)
+      background: color-mix(in srgb, var(--box) 90%, var(--ink) 10%)
     }
 
     /* visible focus ring for keyboard users (mouse focus stays quiet) */
@@ -363,7 +363,7 @@
     }
 
     .ritem:hover {
-      background: color-mix(in srgb, var(--bg) 94%, var(--ink) 6%)
+      background: color-mix(in srgb, var(--box) 94%, var(--ink) 6%)
     }
 
     .ritem .av {
@@ -431,8 +431,8 @@
 
     .mrow.sel {
       color: var(--ink);
-      background: color-mix(in srgb, var(--bg) 95%, var(--ink) 5%);
-      border-color: color-mix(in srgb, var(--ink) 85%, transparent)
+      background: color-mix(in srgb, var(--box) 95%, var(--ink) 5%);
+      border-color: color-mix(in srgb, var(--ink) 75%, transparent)
     }
 
     .mtag {
@@ -465,7 +465,7 @@
 
     .mbtn.sel {
       color: var(--ink);
-      background: color-mix(in srgb, var(--bg) 96%, var(--ink) 4%)
+      background: color-mix(in srgb, var(--box) 96%, var(--ink) 4%)
     }
 
     .mbtn.reroll {
@@ -541,8 +541,8 @@
 
     .preset.sel {
       color: var(--ink);
-      background: color-mix(in srgb, var(--bg) 95%, var(--ink) 5%);
-      border-color: color-mix(in srgb, var(--ink) 85%, transparent)
+      background: color-mix(in srgb, var(--box) 95%, var(--ink) 5%);
+      border-color: color-mix(in srgb, var(--ink) 75%, transparent)
     }
 
     .mhint {
