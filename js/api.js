@@ -200,33 +200,27 @@ export async function ttcrowdStewards(slug) {
   }
   return names;
 }
-/* run all three discovery sources in parallel, merging same-address hits into one
-   row that keeps every source tag, the first avatar found, and any builder meta.
-   Memoized per query for the session — backspacing to a prior term or retyping it
-   renders from cache with no network round-trip, and two in-flight searches for the
-   same term share one set of calls. */
-const searchCache = new Map();
-export function searchAll(q) {
-  const key = q.trim().toLowerCase();
-  if (searchCache.has(key)) return searchCache.get(key);
-  const p = (async () => {
-    const results = await Promise.allSettled([objktSearch(q), hacktezSearch(q), teztreeSearch(q)]);
-    const byAddr = new Map();
-    for (const r of results) {
-      if (r.status !== 'fulfilled' || !r.value) continue;
-      for (const m of r.value) {
-        if (!m.address) continue;
-        const ex = byAddr.get(m.address);
-        if (!ex) { byAddr.set(m.address, { ...m, srcs: [m.src] }); continue; }
-        if (!ex.srcs.includes(m.src)) ex.srcs.push(m.src);
-        if (!ex.logo && m.logo) ex.logo = m.logo;
-        if (!ex.meta && m.meta) ex.meta = m.meta;
-      }
-    }
-    return [...byAddr.values()].map(m => ({ ...m, src: m.srcs.join(' · ') }));
-  })();
-  searchCache.set(key, p);
+/* per-source memo — each discovery source is cached by query for the session, so
+   retyping or backspacing to a prior term resolves with no network round-trip, and
+   two in-flight searches for the same term share one call. Failures cache as []. */
+const srcCache = { objkt: new Map(), 'hack.tez': new Map(), teztree: new Map() };
+function memoSource(name, fn, q) {
+  const cache = srcCache[name], key = q.trim().toLowerCase();
+  if (cache.has(key)) return cache.get(key);
+  const p = fn(q).catch(() => []);
+  cache.set(key, p);
   return p;
+}
+/* the three creator sources as separate streams, so the caller can render each as it
+   lands instead of waiting for the slowest. Rows carry their own `src` tag, so the
+   same-address merge across sources now happens consumer-side (search.js), letting it
+   stay incremental as each source arrives. */
+export function searchSources(q) {
+  return [
+    { src: 'objkt', p: memoSource('objkt', objktSearch, q) },
+    { src: 'hack.tez', p: memoSource('hack.tez', hacktezSearch, q) },
+    { src: 'teztree', p: memoSource('teztree', teztreeSearch, q) }
+  ];
 }
 /* warm the slow cold caches (teztree namespace, campaign list) on focus, so the
    first keystroke's search isn't paying to fetch them on the critical path */

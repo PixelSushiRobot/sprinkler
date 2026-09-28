@@ -1,7 +1,7 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
 import { creators, makeCreator, full } from './state.js';
-import { ipfsURL, searchAll, enrichCreator, ttcrowdSearch, ttcrowdBrowse, ttcrowdResolve, ttcrowdStewards, warmSearch } from './api.js';
+import { ipfsURL, searchSources, enrichCreator, ttcrowdSearch, ttcrowdBrowse, ttcrowdResolve, ttcrowdStewards, warmSearch } from './api.js';
 import { renderAll } from './grid.js';
 import { escapeHTML } from './escape.js';
 
@@ -9,7 +9,13 @@ import { escapeHTML } from './escape.js';
    campaigns; typing switches to live objkt + hack.tez + teztree lookup (plus
    campaign matches) or accepts a pasted address / .tez name directly. Fully
    keyboard-drivable: ↑/↓ move the highlight, Enter picks, Esc closes. */
-let searchTimer = null, searchSeq = 0, activeIdx = -1;
+let searchTimer = null, searchSeq = 0;
+// navigation is tracked by STABLE ID, not list index, so results streaming in never
+// change what the keyboard points at. userMoved gates the highlight: before the first
+// ↑/↓ there's no active row (Enter falls back to the first). cur holds the in-flight
+// generation's merged results so each source can paint as it arrives.
+let nav = { activeId: null, userMoved: false };
+let cur = null;
 
 // #addErr carries two kinds of message: genuine errors (brightened + a [!] marker
 // via .is-error) and neutral outcome summaries ("added 5 · 1 already in"). Route
@@ -37,19 +43,30 @@ function rowGroup(t, fill) { return `<div class="rgroup"><span>${escapeHTML(t)}<
 
 /* keyboard highlight — the pickable rows are exactly the clickable ones */
 function pickables(box) { return [...box.querySelectorAll('.ritem[data-manual],.ritem[data-addr],.ritem[data-slug]')]; }
-function resetActive(box) {
-  activeIdx = -1;
-  const inp = $('search');
-  inp.setAttribute('aria-expanded', box.classList.contains('show') ? 'true' : 'false');
-  inp.removeAttribute('aria-activedescendant');
+// stable id for a row, derived from the data-* it already carries
+function rowId(el) { const d = el.dataset; return d.addr ? 'addr:' + d.addr : d.slug ? 'slug:' + d.slug : d.manual ? 'manual:' + d.manual : null; }
+// assign option ids/roles for aria — index-based here is fine, it's not the nav key
+function indexRows(box) {
+  $('search').setAttribute('aria-expanded', box.classList.contains('show') ? 'true' : 'false');
   pickables(box).forEach((el, i) => { el.id = 'sopt-' + i; el.setAttribute('role', 'option'); });
 }
-function setActive(box, i) {
+// re-apply the highlight to whichever row still carries nav.activeId after a (re)paint.
+// If the user hasn't navigated, nothing is highlighted (Enter still picks the first).
+function restoreActive(box) {
+  indexRows(box);
+  const inp = $('search'), list = pickables(box);
+  const el = (nav.userMoved && nav.activeId) ? list.find(x => rowId(x) === nav.activeId) || null : null;
+  list.forEach(x => x.classList.toggle('active', x === el));
+  if (el) { el.scrollIntoView({ block: 'nearest' }); inp.setAttribute('aria-activedescendant', el.id); }
+  else inp.removeAttribute('aria-activedescendant');
+}
+// move the highlight by ±1, tracking the destination by id so a later repaint keeps it
+function moveActive(box, delta) {
   const list = pickables(box); if (!list.length) return;
-  activeIdx = Math.max(0, Math.min(list.length - 1, i));
-  list.forEach((el, k) => el.classList.toggle('active', k === activeIdx));
-  const el = list[activeIdx]; el.scrollIntoView({ block: 'nearest' });
-  $('search').setAttribute('aria-activedescendant', el.id);
+  const idx = nav.activeId ? list.findIndex(x => rowId(x) === nav.activeId) : -1;
+  const next = Math.max(0, Math.min(list.length - 1, idx + delta));
+  nav.userMoved = true; nav.activeId = rowId(list[next]);
+  restoreActive(box);
 }
 
 function wireResults(box) {
@@ -62,7 +79,7 @@ function wireResults(box) {
   // JS avatar fallback (CSP blocks inline onerror) — rowFound + rowCampaign rows have a remote src
   box.querySelectorAll('.ritem[data-addr] img.av').forEach(img => { const seed = img.closest('.ritem').dataset.addr; img.onerror = () => { img.onerror = null; img.src = avatarSVG(seed); }; });
   box.querySelectorAll('.ritem[data-slug] img.av').forEach(img => { const seed = img.closest('.ritem').dataset.slug; img.onerror = () => { img.onerror = null; img.src = avatarSVG(seed); }; });
-  resetActive(box);
+  restoreActive(box);
 }
 
 // open the right dropdown state for the current input: search when typing, browse when empty
@@ -84,37 +101,63 @@ function enrichStewards(box, camps, seq) {
   });
 }
 
+/* merge a source's rows into the current generation's de-duped creator map. Insertion
+   order is fixed the first time an address is seen; a later source with the same address
+   only merges its tag/avatar/meta — it never moves an existing row. Creators already in
+   the nine are skipped, matching the old filter. */
+function mergeCreators(rows) {
+  for (const m of rows || []) {
+    if (!m.address || creators.some(x => x.addr === m.address)) continue;
+    const ex = cur.byAddr.get(m.address);
+    if (!ex) { cur.byAddr.set(m.address, { address: m.address, name: m.name, logo: m.logo || null, meta: m.meta || '', srcs: [m.src] }); cur.order.push(m.address); }
+    else { if (!ex.srcs.includes(m.src)) ex.srcs.push(m.src); if (!ex.logo && m.logo) ex.logo = m.logo; if (!ex.meta && m.meta) ex.meta = m.meta; if (!ex.name && m.name) ex.name = m.name; }
+  }
+}
+/* rebuild the dropdown from the current generation buffer. Fixed sections (creators,
+   then campaigns), never relevance-sorted, capped at 8 by insertion order so a
+   highlighted row can't be bumped out. A faint "searching…" line trails until every
+   source has settled. restoreActive re-pins the highlight by id after the repaint. */
+function paint() {
+  if (!cur) return;
+  const box = $('results');
+  const creatorRows = cur.order.slice(0, 8).map(a => { const r = cur.byAddr.get(a); return rowFound({ address: r.address, name: r.name, logo: r.logo, meta: r.meta, src: r.srcs.join(' · ') }); });
+  const campRows = cur.camps.map(rowCampaign);
+  const both = creatorRows.length && campRows.length;   // only label the split when there's something to split
+  let html = cur.head;
+  if (creatorRows.length) html += (both ? rowGroup('creators') : '') + creatorRows.join('');
+  if (campRows.length) html += (both ? rowGroup('crowdfunding campaigns') : '') + campRows.join('');
+  if (cur.pending) html += rowNote('searching…');
+  else if (!creatorRows.length && !campRows.length && !cur.head) html = rowNote('no matches — paste a tz1… or a .tez name');
+  box.innerHTML = html; box.classList.add('show'); wireResults(box);
+  if (campRows.length) enrichStewards(box, cur.camps, cur.seq);
+}
+
 function renderResults(q) {
   const box = $('results'); q = q.trim();
   if (!q) { renderBrowse(); return; }
+  nav = { activeId: null, userMoved: false };   // query changed — reset navigation
   const c = makeCreator(q);
   const head = c ? (creators.some(x => x.id === c.id) ? rowDup(q, c) : rowManual(q, c)) : '';
   // a single character blasts every source with a near-match-all query for little
   // value — wait for a second character before hitting the network
-  if (q.length < 2 && !c) { box.innerHTML = rowNote('keep typing…'); box.classList.add('show'); wireResults(box); return; }
+  if (q.length < 2 && !c) { cur = null; box.innerHTML = rowNote('keep typing…'); box.classList.add('show'); wireResults(box); return; }
   box.innerHTML = head + rowNote('searching…'); box.classList.add('show'); wireResults(box);
   clearTimeout(searchTimer);
   const seq = ++searchSeq;
-  searchTimer = setTimeout(async () => {
-    const [mRes, cRes] = await Promise.allSettled([searchAll(q), ttcrowdSearch(q)]);
-    if (seq !== searchSeq) return;
-    const matches = mRes.status === 'fulfilled' ? mRes.value : [];
-    const camps = cRes.status === 'fulfilled' ? cRes.value : [];
-    const liveRows = matches.filter(m => !creators.some(x => x.addr === m.address)).slice(0, 8).map(rowFound);
-    const campRows = camps.map(rowCampaign);
-    const both = liveRows.length && campRows.length;   // only label the split when there's something to split
-    let html = head;
-    if (liveRows.length) html += (both ? rowGroup('creators') : '') + liveRows.join('');
-    if (campRows.length) html += (both ? rowGroup('crowdfunding campaigns') : '') + campRows.join('');
-    if (!html) html = rowNote('no matches — paste a tz1… or a .tez name');
-    box.innerHTML = html; box.classList.add('show'); wireResults(box);
-    enrichStewards(box, camps, seq);
+  searchTimer = setTimeout(() => {
+    // one buffer per generation: 3 creator sources + campaigns, each painting as it lands
+    cur = { seq, head, order: [], byAddr: new Map(), camps: [], pending: true, remaining: 4 };
+    const settle = () => { if (seq !== searchSeq) return; if (--cur.remaining <= 0) cur.pending = false; paint(); };
+    searchSources(q).forEach(({ p }) => p.then(rows => { if (seq === searchSeq) mergeCreators(rows); }).catch(() => { }).finally(settle));
+    ttcrowdSearch(q).then(rows => { if (seq === searchSeq) cur.camps = rows; }).catch(() => { }).finally(settle);
+    paint();   // initial head + "searching…" for this generation
   }, 250);
 }
 
 // empty-focus browse: all active TTCrowd campaigns, with a one-click fill action
 async function renderBrowse() {
   const box = $('results');
+  nav = { activeId: null, userMoved: false };
   box.innerHTML = rowNote('loading campaigns…'); box.classList.add('show'); wireResults(box);
   const seq = ++searchSeq;
   let camps = [];
@@ -134,7 +177,7 @@ function addFound(addr, name, logo) {
   if (creators.some(x => x.id === c.id)) { errShow('already in your nine'); return; }
   creators.push(c); renderAll(); enrichCreator(c);
 }
-function clearSearch() { $('search').value = ''; const b = $('results'); b.classList.remove('show'); b.innerHTML = ''; $('search').setAttribute('aria-expanded', 'false'); }
+function clearSearch() { nav = { activeId: null, userMoved: false }; cur = null; $('search').value = ''; const b = $('results'); b.classList.remove('show'); b.innerHTML = ''; $('search').setAttribute('aria-expanded', 'false'); }
 function hideResults() { $('results').classList.remove('show'); $('search').setAttribute('aria-expanded', 'false'); }
 
 /* shared add path for a resolved campaign row (address/closed carried inline).
@@ -210,9 +253,9 @@ $('search').addEventListener('paste', e => {
 });
 $('search').addEventListener('keydown', e => {
   const box = $('results');
-  if (e.key === 'ArrowDown') { e.preventDefault(); if (!box.classList.contains('show')) { openFor($('search').value); return; } setActive(box, activeIdx + 1); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(box, activeIdx - 1); }
-  else if (e.key === 'Enter') { const list = pickables(box); const el = list[activeIdx] || list[0]; if (el) { e.preventDefault(); el.click(); } }
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (!box.classList.contains('show')) { openFor($('search').value); return; } moveActive(box, +1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(box, -1); }
+  else if (e.key === 'Enter') { const list = pickables(box); const el = (nav.activeId && list.find(x => rowId(x) === nav.activeId)) || list[0]; if (el) { e.preventDefault(); el.click(); } }
   else if (e.key === 'Escape') { clearSearch(); }
   else if (e.key === 'Tab') { hideResults(); }
 });
