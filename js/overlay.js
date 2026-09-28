@@ -134,6 +134,17 @@ window.addEventListener('tez-account', e => { walletAddr = e.detail || null; syn
 $('ovClose').onclick = closeOverlay;
 document.querySelectorAll('#netTog button').forEach(b => b.onclick = () => setPayNet(b.dataset.net));
 renderNetLabel();
+/* the payout network toggle is a hidden setting — Mainnet is the default and the
+   Network row stays out of the confirm dialog until you press "t" (a testing
+   affordance for switching to Shadownet). Ignored while typing in a field. */
+let netShown = false;
+function applyNetRow() { const r = $('netRow'); if (r) r.style.display = netShown ? '' : 'none'; }
+applyNetRow();
+document.addEventListener('keydown', e => {
+  if ((e.key !== 't' && e.key !== 'T') || e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target; if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+  netShown = !netShown; applyNetRow();
+});
 $('overlay').addEventListener('click', e => { if (e.target === $('overlay')) closeOverlay(); });
 // Esc closes; Tab cycles within the dialog so focus never escapes behind the overlay
 $('overlay').addEventListener('keydown', e => {

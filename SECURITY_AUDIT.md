@@ -15,6 +15,12 @@ branch/PR. Each finding keeps its original write-up for context, with a
 by re-running the same exploit payloads described below against the patched
 code in headless Chromium — see the fix notes for specifics.
 
+Features added since the original audit (campaign browse, `?to=` deep-links,
+batched profile lookups, the share link, and a Mainnet-by-default payout) are
+reviewed in **Post-audit additions** at the end of this document. They reuse the
+hardened paths and add no new required code fix, with one documented
+residual-trust note about campaign recipient addresses.
+
 ## Summary
 
 | # | Severity | Finding | Status |
@@ -241,3 +247,51 @@ For completeness, these were considered and are **not** findings:
   distribute-remainder logic always sums to exactly the input `pot` in
   mutez, with the remainder (always `< creators.length`) distributed one
   unit at a time — no dust, no over/under-allocation.
+
+---
+
+## Post-audit additions (browse, deep-links, share)
+
+Features added after the original five-finding audit, reviewed against the same
+bar ("can an adversary get the wallet to sign something unintended, or inject
+script"). All reuse the hardened paths above; none needs a new code fix, with one
+documented residual-trust note.
+
+- **`?to=` deep-link prefill** (`js/main.js`, `js/search.js` `addMany`). A URL
+  supplies only *recipient identifiers*, never display data: each token runs
+  through `makeCreator` (Base58Check-validated per finding #5) or, failing that,
+  a strict slug regex (`^[a-z0-9][a-z0-9-]{1,60}$`) before being resolved as a
+  TTCrowd campaign. Names, avatars, pot, split, and network are **not** settable
+  from the URL, so a link can't inject markup or mislabel a recipient, and can't
+  move money on its own — the wallet still signs. The status line is written with
+  `textContent`. Checked: `?to=<img src=x onerror=…>` is dropped as an invalid
+  token, never rendered.
+- **TTCrowd as a third-party data source** (`js/api.js`, `js/search.js`). Campaign
+  title/logo flow through the same `escapeHTML` render paths as finding #1
+  (`rowCampaign` plus the tile and confirm-table builders); steward names are
+  written with `textContent`; the campaign "learn more" href is `escapeHTML`'d
+  over an `encodeURIComponent`'d slug. **Residual trust (accepted):** a campaign's
+  payout wallet (`tezos_l1_recipient`) now comes from TTCrowd's API over TLS. It's
+  validated as a *well-formed* address (finding #5) but trusted as the *correct*
+  one — the same class of third-party trust as the CDN in finding #3. If TTCrowd's
+  API were compromised or MITM'd, a campaign's recipient could be swapped. This is
+  inherent to donating to a directory-listed campaign; it's mitigated by the user
+  reviewing the confirm table before the wallet signs, and bounded by `connect-src`
+  being TLS-only. Documented as an accepted edge, not remediated in code.
+- **Batched objkt profile query** (`js/api.js` `objktProfile` / `flushProfiles`).
+  Steward and creator addresses are passed as a **bound** GraphQL variable
+  (`holder(where:{address:{_in:$a}})`), never string-interpolated — consistent
+  with the GraphQL-injection ruling under "Checked and ruled out."
+- **Share link / clipboard** (`js/grid.js`). Builds a `?to=` URL from the
+  already-validated nine and copies it via `navigator.clipboard.writeText` (with a
+  hidden-`<textarea>` `execCommand` fallback). No external call, no untrusted input,
+  output is our own URL.
+
+### Stakes note: Mainnet is now the default
+
+Payouts default to **Mainnet** (`js/config.js`), with the network toggle demoted
+to a hidden `t`-key setting. Real funds by default raises the impact of findings
+#1–#3 — all of which remain fixed — so the invariant to hold on every future
+change is unchanged: **untrusted display data stays escaped, the payout primitive
+stays module-scoped (never back on `window`), and recipients are always shown for
+review before the wallet signs.**

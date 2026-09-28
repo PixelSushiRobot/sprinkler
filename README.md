@@ -21,12 +21,12 @@ js/
   avatar.js        identicon generation (rng + SVG/canvas)
   escape.js        escapeHTML — for any third-party profile data going into innerHTML
   base58check.js   Tezos address checksum validation
-  api.js           TzKT / objkt / hack.tez / Teztree resolution & search
-  grid.js          the "your nine" grid, drag-to-reorder, method picker
-  search.js        the search box + results dropdown
+  api.js           TzKT / objkt / hack.tez / Teztree / TTCrowd resolution & search
+  grid.js          the "your nine" grid, drag-to-reorder, method picker, share link
+  search.js        the search box, campaign browse & results dropdown
   presets.js       the 9 / 90 / 900 / Custom pot chips
   garden.js        the shareable "garden" canvas card
-  overlay.js       confirm dialog, network toggle, sprinkle flow
+  overlay.js       confirm dialog, hidden network toggle, sprinkle flow
   wallet.js        Octez Connect (tzip-10) integration
   main.js          bootstraps everything else
 ```
@@ -62,6 +62,13 @@ tie. Then the remainder is distributed by the method's weights:
 
 ## What you can add
 
+- **TTCrowd campaigns** — focus the empty search box to browse active
+  crowdfunding campaigns on [TTCrowd](https://crowd.thetezos.com), or type to
+  filter them alongside creator results. Each row shows the campaign, its
+  percent raised, and its steward(s) — resolved to an objkt name where one
+  exists — with a link out to the campaign page. "Fill all" seeds the grid from
+  the active list. Adding a campaign uses its onchain recipient wallet; a
+  campaign closed to donations is flagged and skipped.
 - **Names** — type a partial name to search three live directories at once:
   objkt aliases, hack.tez builders, and Teztree handles. Results are deduped by
   wallet and tagged by source; hack.tez rows also show builder status and
@@ -78,17 +85,25 @@ tie. Then the remainder is distributed by the method's weights:
 
 ### Prefill from a link
 
-`?to=` takes the same list you could paste — addresses and `.tez` names,
-comma / space / semicolon separated — and runs it through the paste path:
+`?to=` takes the same list you could paste — wallets, `.tez` names, and TTCrowd
+campaign slugs, comma / space / semicolon separated — and runs it through the
+paste path:
 
 ```
-https://pixelsushirobot.github.io/sprinkler/?to=alice.tez,bob.hack.tez,tz1…
+https://pixelsushirobot.github.io/sprinkler/?to=alice.tez,8scribo,tz1…
 ```
 
-Fewer than nine leaves open slots to fill by hand; extras past nine, duplicates
-and invalid entries are dropped and counted in the status line. Only
+Each token is tried as a wallet, then a `.tez` name, then a campaign slug
+(resolved against the campaign list, with a `/summary` fallback). Fewer than
+nine leaves open slots to fill by hand; extras past nine, duplicates, closed
+campaigns and invalid entries are dropped and counted in the status line. Only
 recipients are settable — no names, avatars, pot, split, network, or wallet
 action come from the URL, so a link can't label an address or move money.
+
+The **"copy a share link"** action under *sprinkle it* does the reverse: it
+serializes your current nine back into a `?to=` URL — emitting a campaign slug,
+then a `.tez`, then the raw wallet, whichever is cleanest per recipient — in the
+order you've arranged them.
 
 For display, a creator's name prefers a clean username (objkt alias, then
 Teztree handle) over a raw `.tez` domain. Avatars come from each source's own
@@ -100,18 +115,17 @@ Search and resolution only have data on **mainnet** — objkt, hack.tez, Teztree
 and Tezos Domains are all mainnet catalogs. So search always runs against
 mainnet.
 
-The **payout network is a toggle in the confirm dialog** — *Shadownet · test* vs.
-*Mainnet · real* — defaulting to Shadownet so anyone can run the full flow
-(connect → sign → broadcast → share) with faucet tez before real money moves.
-Flipping it rebuilds the wallet client and drops the current session, so you
-reconnect on the newly selected network; the success link and footer follow the
-choice automatically.
+Payouts **default to Mainnet** — real tez, real transfers. The Shadownet test
+network is still built in, but the network toggle is a **hidden setting**: press
+**`t`** (anywhere outside a text field) to reveal the *Shadownet · test /
+Mainnet · real* toggle in the confirm dialog. Switching rebuilds the wallet
+client and drops the current session, so you reconnect on the newly selected
+network; the success link and footer follow the choice automatically.
 
-To test on Shadownet, point your wallet at the custom RPC
-`https://rpc.shadownet.teztnets.com` and fund it from
-`https://faucet.shadownet.teztnets.com`. To change the default the dialog opens
-on, set `window.SPRINKLER_PAYNET` (`'shadownet'` or `'mainnet'`) near the top of
-the script.
+To test on Shadownet, press `t`, switch to Shadownet, point your wallet at the
+custom RPC `https://rpc.shadownet.teztnets.com`, and fund it from
+`https://faucet.shadownet.teztnets.com`. The default payout network is the
+`payNetKey` value at the top of `js/config.js`.
 
 ## Data / API stack
 
