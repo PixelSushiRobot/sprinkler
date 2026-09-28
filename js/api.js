@@ -10,6 +10,34 @@ export const ipfsURL = u => !u ? null : (u.startsWith('ipfs://') ? 'https://ipfs
 const objktAvatar = a => 'https://avatar.objkt.com/v1/' + a;
 async function fetchJSON(url, opts) { const r = await fetch(url, opts); if (!r.ok) throw new Error('http ' + r.status); return r.json(); }
 
+/* objkt holder profile (alias + avatar) by address, batched: calls made in the same
+   tick — every visible steward, or a whole pasted list of creators — coalesce into one
+   holder(where:{address:{_in:[…]}}) query, and each address is cached for the session.
+   This is the single objkt-profile path for both stewards and creators. */
+const objktProfileCache = new Map();
+let profQueue = new Map(), profTimer = null;
+function objktProfile(addr) {
+  if (!addr) return Promise.resolve({ alias: null, logo: null });
+  if (objktProfileCache.has(addr)) return Promise.resolve(objktProfileCache.get(addr));
+  if (profQueue.has(addr)) return profQueue.get(addr).promise;
+  let resolve; const promise = new Promise(r => (resolve = r));
+  profQueue.set(addr, { promise, resolve });
+  if (!profTimer) profTimer = setTimeout(flushProfiles, 0);
+  return promise;
+}
+function flushProfiles() {
+  profTimer = null;
+  const batch = profQueue; profQueue = new Map();
+  fetch('https://data.objkt.com/v3/graphql', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ query: 'query($a:[String!]){holder(where:{address:{_in:$a}}){address alias logo}}', variables: { a: [...batch.keys()] } })
+  }).then(r => r.json()).catch(() => null).then(j => {
+    const found = new Map();
+    for (const h of (j && j.data && j.data.holder) || []) found.set(h.address, { alias: h.alias || null, logo: h.logo ? ipfsURL(h.logo) : null });
+    for (const [addr, { resolve }] of batch) { const prof = found.get(addr) || { alias: null, logo: null }; objktProfileCache.set(addr, prof); resolve(prof); }
+  });
+}
+
 /* resolve address / .tez name, pull activity + balance, real avatar */
 export async function enrichCreator(c) {
   try {
@@ -49,13 +77,17 @@ export async function enrichCreator(c) {
     const needPic = !c.avatar && !prof.logo;
     if (needName || needPic) doms = await fetchJSON(`${TZKT}/v1/domains?owner=${c.addr}&limit=100`).catch(() => null);
 
-    if (c._isAddr && !c._named) {
-      // prefer a clean username — objkt alias, then teztree handle — over a .tez name
+    // adopt a clean username for both a typed address and a typed .tez — linking a
+    // wallet to an objkt alias or teztree handle is the identity they chose to present,
+    // so prefer it. A raw address then falls back to an owned .tez / account alias /
+    // truncated form; a typed .tez keeps itself as the fallback. A name that came from
+    // a search-result pick (_named) is left untouched.
+    if (!c._named) {
       if (prof.alias) c.name = prof.alias;
       else {
         const tt = (await teztreeAll().catch(() => [])).find(h => h.address === c.addr);
         if (tt) c.name = tt.displayName || tt.handle;
-        else {
+        else if (c._isAddr) {
           const best = Array.isArray(doms) ? bestDomain(doms) : null;
           if (best && best.name) c.name = best.name;
           else if (acc && acc.alias) c.name = acc.alias;
@@ -71,19 +103,9 @@ export async function enrichCreator(c) {
   renderAll(); syncConfirmReady();
 }
 
-/* best-effort objkt profile (mainnet catalog): clean alias + avatar in one hit */
-async function resolveProfile(addr) {
-  try {
-    const r = await fetch('https://data.objkt.com/v3/graphql', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ query: 'query($a:String!){holder(where:{address:{_eq:$a}}){alias logo}}', variables: { a: addr } })
-    });
-    const j = await r.json();
-    const h = j && j.data && j.data.holder && j.data.holder[0];
-    if (h) return { alias: h.alias || null, logo: h.logo ? ipfsURL(h.logo) : null };
-  } catch (e) { }
-  return { alias: null, logo: null };
-}
+/* best-effort objkt profile (mainnet catalog): clean alias + avatar in one hit —
+   delegates to the batched, session-cached loader above */
+const resolveProfile = objktProfile;
 /* when a wallet holds several .tez names, pick the one to display: its reverse
    (primary) name if it set one, else the fewest-label / shortest / most-recent */
 function bestDomain(list) {
@@ -193,11 +215,15 @@ export async function ttcrowdStewards(slug) {
   const j = await ttcrowdSummary(slug);
   if (!j) return [];
   const arr = Array.isArray(j.stewards) && j.stewards.length ? j.stewards : (j.steward ? [j.steward] : []);
+  // resolve each steward's objkt alias (batched with every other visible steward);
+  // prefer that clean username, fall back to the campaign's .tez / alias / tzdomain
+  const profs = await Promise.all(arr.map(s => s && s.address ? objktProfile(s.address) : Promise.resolve(null)));
   const seen = new Set(), names = [];
-  for (const s of arr) {
-    const n = ((s && (s.name || s.alias || s.tzdomain)) || '').trim();
+  arr.forEach((s, i) => {
+    const prof = profs[i];
+    const n = (((prof && prof.alias) || (s && (s.name || s.alias || s.tzdomain))) || '').trim();
     if (n && !seen.has(n)) { seen.add(n); names.push(n); }
-  }
+  });
   return names;
 }
 /* per-source memo — each discovery source is cached by query for the session, so
