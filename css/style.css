@@ -221,6 +221,7 @@
     .tag,
     .rfill,
     .rlink,
+    .sharelink,
     .txlink,
     .sbtn {
       transition-property: color, background-color, border-color, opacity;
@@ -245,6 +246,33 @@
 
     .btn:disabled {
       opacity: .3;
+      cursor: not-allowed
+    }
+
+    /* secondary text link under the sprinkle button — share the current nine as a URL */
+    .sharelink {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 10.5px;
+      letter-spacing: .04em;
+      text-align: center
+    }
+
+    .sharelink:hover:not(:disabled) {
+      color: var(--ink)
+    }
+
+    .sharelink.copied {
+      color: var(--good)
+    }
+
+    .sharelink:disabled {
+      opacity: .35;
       cursor: not-allowed
     }
 

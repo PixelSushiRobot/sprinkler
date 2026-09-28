@@ -190,6 +190,7 @@ function tryAddCampaign(m) {
   if (!c) return 'invalid';
   if (creators.some(x => x.id === c.id)) return 'dup';
   c.name = m.name || m.slug; c._named = true;
+  if (m.slug) c._slug = m.slug;   // let the share link emit the slug, not the raw wallet
   if (m.logo) c.avatar = m.logo;
   creators.push(c); enrichCreator(c);
   return 'added';
@@ -221,23 +222,37 @@ async function fillCampaigns() {
   errNote(bits.join(' · '));
 }
 function addCreator(v) { errNote(''); if (full()) { errShow("that's nine — that's the whole point"); return; } const c = makeCreator(v); if (!c) { errShow("not a tz address or a .tez name"); return; } if (creators.some(x => x.id === c.id)) { errShow('already in your nine'); return; } creators.push(c); renderAll(); enrichCreator(c); }
-/* paste a whole list at once — newline / comma / space / semicolon separated.
-   Also the ?to= prefill path in main.js, so a link gets exactly the same
-   validation, dedupe and nine-cap as a paste. */
-export function addMany(text) {
+/* a bare TTCrowd slug — no dots or spaces (those are .tez names or junk) */
+function isSlug(t) { return /^[a-z0-9][a-z0-9-]{1,60}$/i.test(t); }
+/* paste a whole list at once — newline / comma / space / semicolon separated. Also the
+   ?to= prefill path in main.js, so a link gets the same validation, dedupe and nine-cap
+   as a paste. Each token is tried as a wallet / .tez first, then as a TTCrowd campaign
+   slug (resolved from the cached list, with a /summary fallback for one not listed). */
+export async function addMany(text) {
+  errNote('');
   const tokens = text.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
-  let added = 0, dup = 0, bad = 0, over = 0;
+  const list = await ttcrowdBrowse().catch(() => []);
+  let added = 0, dup = 0, bad = 0, over = 0, closed = 0;
   for (const tok of tokens) {
     if (full()) { over++; continue; }
     const c = makeCreator(tok);
-    if (!c) { bad++; continue; }
-    if (creators.some(x => x.id === c.id)) { dup++; continue; }
-    creators.push(c); enrichCreator(c); added++;
+    if (c) {                                                  // wallet or .tez name
+      if (creators.some(x => x.id === c.id)) { dup++; continue; }
+      creators.push(c); enrichCreator(c); added++; continue;
+    }
+    if (isSlug(tok)) {                                        // try as a campaign slug
+      let m = list.find(x => x.slug === tok);
+      if (m && !m.address) { try { const info = await ttcrowdResolve(tok); if (info) m = { ...m, address: info.address, closed: m.closed || info.closed, logo: m.logo || info.avatar }; } catch (e) { } }
+      if (!m) { try { const info = await ttcrowdResolve(tok); if (info && info.address) m = { slug: tok, name: tok, logo: info.avatar, address: info.address, closed: info.closed }; } catch (e) { } }
+      if (m) { const st = tryAddCampaign(m); if (st === 'added') added++; else if (st === 'dup') dup++; else if (st === 'closed') closed++; else if (st === 'over') over++; else bad++; continue; }
+    }
+    bad++;
   }
   renderAll();
   const bits = [];
   if (added) bits.push(`added ${added}`);
   if (dup) bits.push(`${dup} already in`);
+  if (closed) bits.push(`${closed} not taking donations`);
   if (bad) bits.push(`${bad} not valid`);
   if (over) bits.push(`${over} over the nine`);
   errNote(bits.join(' · '));

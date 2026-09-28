@@ -49,6 +49,7 @@ export function renderGrid() {
   for (let k = creators.length; k < 9; k++) { const s = document.createElement('div'); s.className = 'eslot'; s.textContent = '+'; g.appendChild(s); }
   $('count').textContent = creators.length + ' / 9';
   $('sprinkleBtn').disabled = !on;
+  $('shareListBtn').disabled = creators.length === 0;
   $('splitfoot').textContent = on ? `${pot} XTZ across nine · one transaction` : `plant ${9 - creators.length} more`;
   layoutNums();
 }
@@ -62,6 +63,35 @@ function layoutNums() {
 export function renderAll() { renderMethods(); renderGrid(); }
 
 $('amount').addEventListener('input', renderGrid);
+
+/* share the current nine as a ?to= link — emits the nicest identifier per creator
+   (campaign slug > .tez name > wallet), in the arranged order, so the link round-trips
+   through the same prefill parser main.js already uses. */
+const SHARE_LABEL = 'copy a share link';
+function shareToken(c) {
+  if (c._slug) return c._slug;
+  if (c._input && /\.tez$/i.test(c._input)) return c._input;
+  return c.addr;
+}
+function shareURL() {
+  const toks = displayOrder().map(i => shareToken(creators[i])).filter(Boolean);
+  return location.origin + location.pathname + '?to=' + encodeURIComponent(toks.join(','));
+}
+async function copyShareLink() {
+  const btn = $('shareListBtn'); if (btn.disabled) return;
+  const url = shareURL();
+  let ok = true;
+  try { await navigator.clipboard.writeText(url); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+    ta.remove();
+  }
+  btn.textContent = ok ? 'link copied ✓' : 'press ⌘C to copy';
+  btn.classList.toggle('copied', ok);
+  clearTimeout(btn._t); btn._t = setTimeout(() => { btn.textContent = SHARE_LABEL; btn.classList.remove('copied'); }, 1800);
+}
+$('shareListBtn').addEventListener('click', copyShareLink);
 
 /* Photos-style Drag and Drop */
 (function () {
