@@ -120,7 +120,7 @@ async function doSprinkle() {
   $('confirmPane').style.display = 'none'; $('successPane').style.display = '';
   renderGarden();
   const t = encodeURIComponent(SHARE_TEXT);
-  $('shareFc').href = 'https://warpcast.com/~/compose?text=' + t;
+  $('shareFc').href = 'https://farcaster.xyz/~/compose?text=' + t;
   $('shareBs').href = 'https://bsky.app/intent/compose?text=' + t;
 }
 function closeOverlay() { $('overlay').classList.remove('show'); const b = $('sprinkleBtn'); if (b) b.focus(); }
@@ -159,3 +159,17 @@ $('overlay').addEventListener('keydown', e => {
 $('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT), '_blank');
 $('copyBtn').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(SHARE_TEXT); $('copyBtn').textContent = 'copied ✓'; setTimeout(() => $('copyBtn').textContent = 'Copy text', 1400); };
 $('dlBtn').onclick = () => { try { const a = document.createElement('a'); a.download = 'my-garden.png'; a.href = $('gardenCanvas').toDataURL('image/png'); a.click(); } catch (e) { console.error('[sprinkler] card export failed (tainted canvas?):', e); $('sprinkleErr').textContent = "couldn't export the card — try again"; } };
+/* native share sheet WITH the card image — the only way to actually attach the PNG,
+   since the X/Farcaster/Bluesky intent links carry text only. Feature-detected: the
+   button stays hidden where the browser can't share files (most desktop, Firefox). */
+async function shareCard() {
+  let file;
+  try { const blob = await new Promise(r => $('gardenCanvas').toBlob(r, 'image/png')); if (!blob) throw 0; file = new File([blob], 'my-garden.png', { type: 'image/png' }); }
+  catch (e) { $('sprinkleErr').textContent = "couldn't build the card image"; return; }
+  if (!(navigator.canShare && navigator.canShare({ files: [file] }))) { $('sprinkleErr').textContent = 'image sharing isn’t supported here — use ↓ Card'; return; }
+  try { await navigator.share({ files: [file], text: SHARE_TEXT }); } catch (e) { /* user dismissed the sheet */ }
+}
+try {
+  const probe = new File([new Blob(['x'])], 'x.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [probe] })) { const b = $('shareImg'); if (b) { b.style.display = ''; b.onclick = shareCard; } }
+} catch (e) { /* no file-share support — leave the button hidden */ }

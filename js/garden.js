@@ -2,9 +2,18 @@ import { $ } from './dom.js';
 import { drawAvatar } from './avatar.js';
 import { creators, full, displayOrder, lastHash } from './state.js';
 
-/* load an avatar for canvas use — crossOrigin so a clean load stays exportable,
-   and a CORS/404 failure resolves null (→ identicon) without tainting the canvas */
-function loadImg(url) { return new Promise(res => { if (!url) return res(null); const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => res(null); im.src = url; }); }
+/* load an avatar for canvas use — crossOrigin so a clean load stays exportable. Some
+   hosts (incl. a few TTCrowd campaign logos) send no CORS headers, which fails the
+   crossOrigin load and would taint the canvas / break the card export. On that failure
+   we retry once through a CORS-adding image proxy, then fall back to the identicon. A
+   plain <img> in the grid has none of this constraint, which is why it shows there. */
+function loadImg(url) {
+  return new Promise(res => {
+    if (!url) return res(null);
+    const attempt = (src, next) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = next; im.src = src; };
+    attempt(url, () => attempt('https://wsrv.nl/?url=' + encodeURIComponent(url) + '&output=png', () => res(null)));
+  });
+}
 function drawImgCover(ctx, img, x, y, size) {
   const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw || !ih) return false;
   const scale = Math.max(size / iw, size / ih), dw = iw * scale, dh = ih * scale;
