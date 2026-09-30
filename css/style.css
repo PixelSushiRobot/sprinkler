@@ -32,7 +32,6 @@
       --lh-snug: 1.35;
       --lh-normal: 1.55;
       /* tracking — smaller/more-structural uppercase = wider */
-      --track-kicker: .34em;
       --track-wide: .2em;
       --track-label: .14em;
       --track-tight: -.01em;
@@ -142,41 +141,21 @@
       line-height: var(--lh-normal)
     }
 
-    .theme-toggle {
-      display: flex;
-      border: 1px solid var(--line);
-      flex: none
-    }
-
-    .th-btn {
-      display: flex;
+    /* theme toggle = a .seg with icon cells (markup: <div class="seg" … id="themeToggle">);
+       border, dividers, hover and the .on accent fill all come from the shared .seg rules */
+    #themeToggle button {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       width: 32px;
       height: 30px;
-      padding: 0;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer
+      padding: 0
     }
 
-    .th-btn+.th-btn {
-      border-left: 1px solid var(--line)
-    }
-
-    .th-btn:hover {
-      color: var(--ink)
-    }
-
-    .th-btn.on {
-      background: var(--accent);
-      color: var(--on-accent)
-    }
-
-    .th-btn svg {
+    #themeToggle svg {
       width: 15px;
-      height: 15px
+      height: 15px;
+      display: block
     }
 
     .panel {
@@ -249,7 +228,6 @@
     .mbtn,
     .preset,
     .seg button,
-    .th-btn,
     select,
     .ritem,
     .tag,
@@ -1254,7 +1232,7 @@
       .controls,
       .adv,
       .btn,
-      .theme-toggle,
+      #themeToggle,
       #overlay {
         display: none !important
       }
