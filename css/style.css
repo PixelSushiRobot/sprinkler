@@ -486,7 +486,7 @@
       background: transparent;
       color: var(--muted);
       font-family: inherit;
-      font-size: var(--fs-xs);
+      font-size: var(--fs-sm);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: .04em;
@@ -506,7 +506,7 @@
 
     .tag {
       margin-left: auto;
-      font-size: var(--fs-2xs);
+      font-size: var(--fs-xs);
       letter-spacing: .12em;
       color: inherit;
       opacity: .7;
