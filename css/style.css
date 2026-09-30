@@ -224,7 +224,8 @@
     }
 
     .phead .step {
-      color: var(--dim);
+      color: var(--accent);
+      font-weight: 600;
       letter-spacing: .1em
     }
 
