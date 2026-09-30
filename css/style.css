@@ -19,6 +19,37 @@
       --t-state: .12s;
       --t-move: .22s;
       --t-reveal: .45s;
+      /* type scale — Major Second (1.125), rem-based, root 16px */
+      --fs-micro: .5rem;
+      --fs-2xs: .625rem;
+      --fs-xs: .6875rem;
+      --fs-sm: .78125rem;
+      --fs-md: .875rem;
+      --fs-lg: 1rem;
+      --fs-display: clamp(1.375rem, 3.2vw, 2.125rem);
+      /* line-height — unitless, scales with any font size */
+      --lh-tight: 1.1;
+      --lh-snug: 1.35;
+      --lh-normal: 1.55;
+      /* tracking — smaller/more-structural uppercase = wider */
+      --track-kicker: .34em;
+      --track-wide: .2em;
+      --track-label: .14em;
+      --track-tight: -.01em;
+      /* spacing — 4px structural scale (px); typographic padding uses em */
+      --sp-1: 4px;
+      --sp-2: 8px;
+      --sp-3: 12px;
+      --sp-4: 16px;
+      --sp-5: 20px;
+      --sp-6: 24px;
+      --sp-7: 32px;
+      --sp-8: 48px;
+      --sp-9: 64px;
+      --sp-10: 80px;
+      /* radius — pills + dots only; everything else stays square */
+      --r-pill: 999px;
+      --r-full: 50%;
     }
 
     :root[data-theme="light"] {
@@ -71,8 +102,8 @@
       font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', 'Consolas', ui-monospace, monospace;
       background: var(--bg);
       color: var(--ink);
-      line-height: 1.5;
-      padding: 0 22px 84px;
+      line-height: var(--lh-normal);
+      padding: 0 var(--sp-6) var(--sp-10);
       -webkit-font-smoothing: antialiased
     }
 
@@ -82,31 +113,31 @@
     }
 
     header {
-      padding: 30px 0 18px;
+      padding: var(--sp-7) 0 var(--sp-5);
       border-bottom: 1px solid var(--line);
-      margin-bottom: 20px;
+      margin-bottom: var(--sp-5);
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 20px;
+      gap: var(--sp-5);
       flex-wrap: wrap
     }
 
     h1 {
-      font-size: clamp(22px, 3.2vw, 34px);
-      line-height: 1.05;
-      margin: 0 0 10px;
-      letter-spacing: -.01em;
+      font-size: var(--fs-display);
+      line-height: var(--lh-tight);
+      margin: 0 0 var(--sp-3);
+      letter-spacing: var(--track-tight);
       font-weight: 600;
       text-transform: uppercase
     }
 
     .sub {
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       color: var(--muted);
       max-width: 560px;
       margin: 0;
-      line-height: 1.6
+      line-height: var(--lh-normal)
     }
 
     .theme-toggle {
@@ -149,40 +180,40 @@
     .panel {
       background: var(--panel);
       border: 1px solid var(--line);
-      padding: 18px
+      padding: var(--sp-5)
     }
 
     .col {
       display: flex;
       flex-direction: column;
-      gap: 18px
+      gap: var(--sp-5)
     }
 
     .pcols {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 18px;
+      gap: var(--sp-5);
       align-items: start
     }
 
     @media (max-width:860px) {
       .pcols {
         grid-template-columns: 1fr;
-        gap: 18px
+        gap: var(--sp-5)
       }
     }
 
     .phead {
       text-transform: uppercase;
-      letter-spacing: .2em;
-      font-size: 10px;
+      letter-spacing: var(--track-wide);
+      font-size: var(--fs-2xs);
       font-weight: 600;
-      margin: 0 0 15px;
+      margin: 0 0 var(--sp-4);
       color: var(--muted);
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding-bottom: 10px;
+      gap: var(--sp-2);
+      padding-bottom: var(--sp-3);
       border-bottom: 1px solid var(--divider)
     }
 
@@ -198,10 +229,10 @@
     }
 
     .slead {
-      font-size: 11px;
+      font-size: var(--fs-xs);
       color: var(--muted);
-      line-height: 1.55;
-      margin: 0 0 14px
+      line-height: var(--lh-normal);
+      margin: 0 0 var(--sp-4)
     }
 
     button {
@@ -231,13 +262,13 @@
 
     .btn {
       text-transform: uppercase;
-      letter-spacing: .14em;
+      letter-spacing: var(--track-label);
       font-weight: 600;
       background: var(--accent);
       color: var(--on-accent);
       border: 1px solid var(--accent);
-      padding: 13px 20px;
-      font-size: 12px
+      padding: var(--sp-3) var(--sp-5);
+      font-size: var(--fs-sm)
     }
 
     .btn:hover:not(:disabled) {
@@ -253,12 +284,12 @@
     .sharelink {
       display: block;
       width: 100%;
-      margin-top: 10px;
+      margin-top: var(--sp-3);
       background: transparent;
       border: none;
       color: var(--dim);
       font-family: inherit;
-      font-size: 10.5px;
+      font-size: var(--fs-xs);
       letter-spacing: .04em;
       text-align: center
     }
@@ -288,8 +319,8 @@
     }
 
     .wc-btn {
-      padding: 6px 12px;
-      font-size: 10px;
+      padding: var(--sp-2) var(--sp-3);
+      font-size: var(--fs-2xs);
       letter-spacing: .1em
     }
 
@@ -304,9 +335,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding: 9px 12px 7px;
-      font-size: 9.5px;
+      gap: var(--sp-3);
+      padding: var(--sp-2) var(--sp-3) var(--sp-2);
+      font-size: var(--fs-2xs);
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--dim);
@@ -317,13 +348,13 @@
 
     .rfill {
       font-family: inherit;
-      font-size: 9px;
+      font-size: var(--fs-2xs);
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--dim);
       background: transparent;
       border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
-      padding: 4px 9px;
+      padding: var(--sp-1) var(--sp-2);
       cursor: pointer;
       white-space: nowrap
     }
@@ -349,8 +380,8 @@
     .searchwrap input {
       width: 100%;
       font-family: inherit;
-      font-size: 13px;
-      padding: 12px 14px;
+      font-size: var(--fs-sm);
+      padding: var(--sp-3) var(--sp-4);
       border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
       background: transparent;
       color: var(--ink)
@@ -381,8 +412,8 @@
     .ritem {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 9px 12px;
+      gap: var(--sp-3);
+      padding: var(--sp-2) var(--sp-3);
       cursor: pointer
     }
 
@@ -402,7 +433,7 @@
     }
 
     .ritem .rn {
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
@@ -410,7 +441,7 @@
     }
 
     .ritem .rs {
-      font-size: 9.5px;
+      font-size: var(--fs-2xs);
       color: var(--dim);
       text-transform: uppercase;
       letter-spacing: .08em;
@@ -422,9 +453,9 @@
       flex: none;
       color: var(--dim);
       text-decoration: none;
-      font-size: 13px;
+      font-size: var(--fs-sm);
       line-height: 1;
-      padding: 4px 4px 4px 8px
+      padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-2)
     }
 
     .rlink:hover {
@@ -435,15 +466,15 @@
     .controls {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: var(--sp-4);
       align-items: flex-start;
-      margin-bottom: 10px
+      margin-bottom: var(--sp-3)
     }
 
     .methodbar {
       display: flex;
       flex-direction: column;
-      gap: 6px
+      gap: var(--sp-2)
     }
 
     .opt {
@@ -455,11 +486,11 @@
       background: transparent;
       color: var(--muted);
       font-family: inherit;
-      font-size: 12.5px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: .04em;
-      padding: 12px 14px;
+      padding: var(--sp-3) var(--sp-4);
       cursor: pointer
     }
 
@@ -475,14 +506,14 @@
 
     .tag {
       margin-left: auto;
-      font-size: 9.5px;
+      font-size: var(--fs-2xs);
       letter-spacing: .12em;
       color: inherit;
       opacity: .7;
       border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
-      border-radius: 20px;
-      line-height: 15px;
-      padding: 2px 9px
+      border-radius: var(--r-pill);
+      line-height: calc(var(--fs-xs) + 4px);
+      padding: .28em .82em
     }
 
     .mbtn {
@@ -490,11 +521,11 @@
       background: transparent;
       color: var(--muted);
       font-family: inherit;
-      font-size: 11.5px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: .03em;
-      padding: 8px 11px
+      padding: var(--sp-2) var(--sp-3)
     }
 
     .mbtn:hover {
@@ -510,20 +541,20 @@
       margin-left: auto;
       display: inline-flex;
       align-items: center;
-      gap: 6px
+      gap: var(--sp-2)
     }
 
     .amount {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: var(--sp-2);
       flex-wrap: wrap
     }
 
     .amount label {
-      font-size: 10.5px;
+      font-size: var(--fs-xs);
       text-transform: uppercase;
-      letter-spacing: .14em;
+      letter-spacing: var(--track-label);
       color: var(--muted)
     }
 
@@ -542,13 +573,15 @@
 
     .amount input {
       font-family: inherit;
-      font-size: 14px;
+      font-size: var(--fs-md);
       line-height: 1.2;
       font-weight: 600;
       width: 82px;
       border: none;
       background: transparent;
-      padding: 9px 2px 9px 11px;
+      /* --sp-2 vertical matches the .preset chips; 11px/2px are optical kerning
+         around the "XTZ" suffix, not scale steps */
+      padding: var(--sp-2) 2px var(--sp-2) 11px;
       color: var(--ink)
     }
 
@@ -558,18 +591,20 @@
 
     .presets {
       display: flex;
-      gap: 6px;
+      gap: var(--sp-2);
       flex-wrap: wrap
     }
 
     .preset {
       font-family: inherit;
-      font-size: 14px;
+      font-size: var(--fs-md);
       font-weight: 600;
       border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
       background: transparent;
       color: var(--muted);
-      padding: 9px 12px;
+      /* shares --sp-2 vertical with .amount input so the chips and the entry box
+         are the same height — one scale step, no off-grid control size */
+      padding: var(--sp-2) var(--sp-3);
       line-height: 1.2
     }
 
@@ -584,38 +619,38 @@
     }
 
     .hint {
-      font-size: 10.5px;
+      font-size: var(--fs-xs);
       color: var(--dim);
-      margin: 12px 0 0;
-      line-height: 1.5
+      margin: var(--sp-3) 0 0;
+      line-height: var(--lh-normal)
     }
 
     .yolobar {
       display: flex;
-      gap: 6px;
-      margin: 12px 0 0;
+      gap: var(--sp-2);
+      margin: var(--sp-3) 0 0;
       align-items: center;
       flex-wrap: wrap
     }
 
     .ylabel {
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       text-transform: uppercase;
       letter-spacing: .12em;
       color: var(--muted);
-      margin-right: 4px
+      margin-right: var(--sp-1)
     }
 
     .adv {
-      margin: 0 0 14px;
+      margin: 0 0 var(--sp-4);
       border-top: 1px solid var(--divider);
-      padding-top: 12px
+      padding-top: var(--sp-3)
     }
 
     .adv summary {
-      font-size: 10.5px;
+      font-size: var(--fs-xs);
       text-transform: uppercase;
-      letter-spacing: .14em;
+      letter-spacing: var(--track-label);
       color: var(--muted);
       cursor: pointer;
       list-style: none
@@ -635,18 +670,18 @@
 
     .sliders {
       display: flex;
-      gap: 26px;
+      gap: var(--sp-6);
       flex-wrap: wrap;
-      margin-top: 12px
+      margin-top: var(--sp-3)
     }
 
     .sld {
-      font-size: 10.5px
+      font-size: var(--fs-xs)
     }
 
     .sld label {
       display: block;
-      margin-bottom: 7px;
+      margin-bottom: var(--sp-2);
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: .1em
@@ -668,7 +703,7 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px
+      gap: var(--sp-3)
     }
 
     .tile {
@@ -676,11 +711,11 @@
       overflow: hidden;
       border: 1px solid var(--line);
       background: var(--inset);
-      padding: 16px 12px 13px;
+      padding: var(--sp-4) var(--sp-3) var(--sp-3);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 9px;
+      gap: var(--sp-2);
       min-height: 172px;
       cursor: grab;
       touch-action: none;
@@ -748,7 +783,7 @@
       height: 22px;
       background: var(--accent);
       color: var(--on-accent);
-      font-size: 11px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       line-height: 22px;
       text-align: center;
@@ -779,7 +814,7 @@
     .tile .nm {
       position: relative;
       z-index: 1;
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       max-width: 100%;
       white-space: nowrap;
@@ -791,7 +826,7 @@
     .tile .num {
       position: relative;
       z-index: 1;
-      font-size: 12px;
+      font-size: var(--fs-sm);
       text-align: center
     }
 
@@ -816,7 +851,7 @@
     }
 
     .tile .num .flag {
-      font-size: 8px;
+      font-size: var(--fs-micro);
       color: var(--dim);
       letter-spacing: .08em;
       display: block;
@@ -838,14 +873,14 @@
     }
 
     .splitfoot {
-      margin-top: 14px;
-      font-size: 10.5px;
+      margin-top: var(--sp-4);
+      font-size: var(--fs-xs);
       color: var(--dim);
       letter-spacing: .04em
     }
 
     .err {
-      font-size: 11px;
+      font-size: var(--fs-xs);
       color: var(--muted);
       margin: 0 1px;
       min-height: 0
@@ -856,7 +891,7 @@
     }
 
     .err:not(:empty) {
-      margin-top: 12px
+      margin-top: var(--sp-3)
     }
 
     /* genuine errors (not neutral summaries) brighten + carry the [!] marker */
@@ -878,7 +913,7 @@
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: var(--sp-5);
       z-index: 100
     }
 
@@ -893,7 +928,7 @@
       max-width: 400px;
       max-height: 92vh;
       overflow: auto;
-      padding: 22px;
+      padding: var(--sp-6);
       position: relative
     }
 
@@ -906,7 +941,7 @@
       border: 1px solid var(--line);
       background: var(--panel);
       color: var(--muted);
-      font-size: 14px;
+      font-size: var(--fs-md);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -919,26 +954,26 @@
     }
 
     .dialog h3 {
-      font-size: 11px;
+      font-size: var(--fs-xs);
       text-transform: uppercase;
-      letter-spacing: .2em;
-      margin: 0 0 14px;
+      letter-spacing: var(--track-wide);
+      margin: 0 0 var(--sp-4);
       color: var(--muted);
-      padding-bottom: 10px;
+      padding-bottom: var(--sp-3);
       border-bottom: 1px solid var(--divider)
     }
 
     .rcpt {
       border: 1px solid var(--divider);
-      margin-bottom: 14px
+      margin-bottom: var(--sp-4)
     }
 
     .rcpt-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
+      gap: var(--sp-3);
+      padding: var(--sp-3) var(--sp-3);
       border-bottom: 1px solid var(--divider)
     }
 
@@ -947,14 +982,14 @@
     }
 
     .rcpt-row .k {
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       text-transform: uppercase;
       letter-spacing: .12em;
       color: var(--muted)
     }
 
     .rcpt-row .v {
-      font-size: 12px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       text-align: right;
       word-break: break-all
@@ -968,10 +1003,10 @@
 
     .seg button {
       font: inherit;
-      font-size: 9.5px;
+      font-size: var(--fs-2xs);
       letter-spacing: .1em;
       text-transform: uppercase;
-      padding: 5px 9px;
+      padding: var(--sp-1) var(--sp-2);
       background: transparent;
       color: var(--dim);
       border: none;
@@ -994,20 +1029,20 @@
     .ov-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 16px
+      margin-bottom: var(--sp-4)
     }
 
     .ov-table td {
-      padding: 5px 0;
+      padding: var(--sp-1) 0;
       border-bottom: 1px solid var(--divider);
-      font-size: 11.5px;
+      font-size: var(--fs-xs);
       vertical-align: middle
     }
 
     .ov-table td:first-child {
       display: flex;
       align-items: center;
-      gap: 8px
+      gap: var(--sp-2)
     }
 
     .ov-table td:last-child {
@@ -1030,14 +1065,14 @@
     }
 
     .rcpt-addr {
-      font-size: 9px;
+      font-size: var(--fs-2xs);
       letter-spacing: .04em;
       color: var(--dim)
     }
 
     .ov-table .bar-cell {
       width: 32%;
-      padding: 0 10px
+      padding: 0 var(--sp-3)
     }
 
     .rbar {
@@ -1055,16 +1090,16 @@
     }
 
     .note {
-      margin-top: 12px;
+      margin-top: var(--sp-3);
       color: var(--dim);
-      font-size: 10.5px;
-      line-height: 1.5;
+      font-size: var(--fs-xs);
+      line-height: var(--lh-normal);
       text-align: center
     }
 
     .note.err {
       color: var(--ink);
-      margin-top: 6px
+      margin-top: var(--sp-2)
     }
 
     .note.err::before {
@@ -1077,8 +1112,8 @@
 
     .txlink {
       display: inline-block;
-      margin: 2px 0 12px;
-      font-size: 10.5px;
+      margin: 2px 0 var(--sp-3);
+      font-size: var(--fs-xs);
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--muted)
@@ -1089,7 +1124,7 @@
     }
 
     .nm-sub {
-      font-size: 9px;
+      font-size: var(--fs-2xs);
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--dim);
@@ -1113,58 +1148,58 @@
       height: auto;
       border: 1px solid var(--line);
       display: block;
-      margin-bottom: 14px
+      margin-bottom: var(--sp-4)
     }
 
     .success-head {
-      font-size: 17px;
+      font-size: var(--fs-lg);
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: .14em;
-      margin-bottom: 4px
+      letter-spacing: var(--track-label);
+      margin-bottom: var(--sp-1)
     }
 
     .ov-lead {
-      font-size: 12px;
+      font-size: var(--fs-sm);
       color: var(--muted);
       margin: 0;
-      line-height: 1.5
+      line-height: var(--lh-normal)
     }
 
     .share-label {
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       text-transform: uppercase;
       letter-spacing: .16em;
       color: var(--muted);
-      margin: 16px 0 8px;
+      margin: var(--sp-4) 0 var(--sp-2);
       text-align: left
     }
 
     .share-box {
       background: var(--inset);
       border: 1px solid var(--line);
-      padding: 11px 12px;
-      font-size: 11.5px;
+      padding: var(--sp-3) var(--sp-3);
+      font-size: var(--fs-xs);
       color: var(--muted);
-      line-height: 1.55;
-      margin-bottom: 12px;
+      line-height: var(--lh-normal);
+      margin-bottom: var(--sp-3);
       text-align: left
     }
 
     .share-row {
       display: flex;
-      gap: 8px;
-      margin-top: 10px;
+      gap: var(--sp-2);
+      margin-top: var(--sp-3);
       flex-wrap: wrap
     }
 
     .sbtn {
       flex: 1;
       font-family: inherit;
-      font-size: 11px;
+      font-size: var(--fs-xs);
       text-transform: uppercase;
       letter-spacing: .06em;
-      padding: 9px 10px;
+      padding: var(--sp-2) var(--sp-3);
       border: 1px solid var(--line);
       color: var(--ink);
       text-decoration: none;
@@ -1182,18 +1217,18 @@
       display: block;
       text-align: center;
       color: var(--dim);
-      font-size: 10px;
-      margin-top: 24px;
+      font-size: var(--fs-2xs);
+      margin-top: var(--sp-6);
       text-transform: uppercase;
-      letter-spacing: .14em;
+      letter-spacing: var(--track-label);
       line-height: 1.8
     }
 
     .foot .sub2 {
       text-transform: uppercase;
       letter-spacing: .06em;
-      font-size: 10.5px;
-      margin-top: 6px
+      font-size: var(--fs-xs);
+      margin-top: var(--sp-2)
     }
 
     .foot #netLabel {
