@@ -50,6 +50,8 @@
       /* radius — pills + dots only; everything else stays square */
       --r-pill: 999px;
       --r-full: 50%;
+      /* layout — content-wrapper width; one column = (--wrap - --sp-5) / 2 */
+      --wrap: 1160px;
     }
 
     :root[data-theme="light"] {
@@ -108,7 +110,7 @@
     }
 
     .wrap {
-      max-width: 1160px;
+      max-width: var(--wrap);
       margin: 0 auto
     }
 
@@ -135,7 +137,7 @@
     .sub {
       font-size: var(--fs-sm);
       color: var(--muted);
-      max-width: 560px;
+      max-width: calc((var(--wrap) - var(--sp-5)) / 2); /* one panel column */
       margin: 0;
       line-height: var(--lh-normal)
     }
