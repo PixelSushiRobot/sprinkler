@@ -1,6 +1,6 @@
 # Sprinkler
 
-**Live:** https://pixelsushirobot.github.io/sprinkler/
+**Live:** https://sprinkler.psr.fyi/
 
 Pour one pot of tez across nine creators in a single batched transaction. Pick
 nine, choose how to split, connect a wallet, sign once — everyone gets watered,
@@ -90,7 +90,7 @@ campaign slugs, comma / space / semicolon separated — and runs it through the
 paste path:
 
 ```
-https://pixelsushirobot.github.io/sprinkler/?to=alice.tez,8scribo,tz1…
+https://sprinkler.psr.fyi/?to=alice.tez,8scribo,tz1…
 ```
 
 Each token is tried as a wallet, then a `.tez` name, then a campaign slug
