@@ -25,6 +25,7 @@ export let lastHash = '';
 export function setMethod(k) { method = k; }
 export function setYoloLevel(k) { yoloLevel = k; }
 export function setLastHash(h) { lastHash = h; }
+export function clearCreators() { creators.length = 0; }
 
 export function full() { return creators.length === 9; }
 

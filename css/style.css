@@ -235,11 +235,28 @@
     .rlink,
     .sharelink,
     .txlink,
+    .sload,
+    .slink,
     .sbtn {
       transition-property: color, background-color, border-color, opacity;
       transition-duration: var(--t-state);
       transition-timing-function: var(--ease);
     }
+
+    /* saved lists (panel 01) + save-as control (panel 04) */
+    .saved { display: flex; flex-direction: column; gap: var(--sp-1); margin-top: var(--sp-3) }
+    .saved:empty { display: none }
+    .savedlabel { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .1em; color: var(--dim); margin-bottom: var(--sp-1) }
+    .srow { display: flex; align-items: center; gap: var(--sp-2) }
+    .sload { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: var(--sp-2); background: transparent; border: none; font-family: inherit; font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); text-align: left; cursor: pointer }
+    .sload:hover { color: var(--ink) }
+    .sload .sn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+    .sload .sc { flex: none; color: var(--dim); font-size: var(--fs-2xs) }
+    .slink { flex: none; background: transparent; border: none; font-family: inherit; font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .1em; color: var(--dim); cursor: pointer }
+    .slink:hover { color: var(--ink) }
+    .srename-input { flex: 1; min-width: 0; font-family: inherit; font-size: var(--fs-xs); padding: var(--sp-1) var(--sp-2); border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent); background: transparent; color: var(--ink) }
+    .savename { display: flex; gap: var(--sp-2); margin-top: var(--sp-2) }
+    .savename input { flex: 1; min-width: 0; font-family: inherit; font-size: var(--fs-xs); padding: var(--sp-2) var(--sp-3); border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent); background: transparent; color: var(--ink) }
 
     .btn {
       text-transform: uppercase;

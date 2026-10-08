@@ -80,6 +80,7 @@
             <div class="results" id="results" role="listbox" aria-label="Results"></div>
           </div>
           <div class="err" id="addErr"></div>
+          <div class="saved" id="savedLists"></div>
         </section>
 
         <section class="panel">
@@ -115,6 +116,11 @@
           <div class="splitfoot" id="splitfoot"></div>
           <button class="btn" id="sprinkleBtn" style="margin-top:16px;width:100%" disabled>sprinkle it</button>
           <button class="sharelink" id="shareListBtn" type="button" disabled>copy a share link</button>
+          <button class="sharelink" id="saveListBtn" type="button" disabled>save this nine as a list</button>
+          <div class="savename" id="saveName" style="display:none">
+            <input id="listName" type="text" placeholder="name this list" maxlength="40" autocomplete="off" spellcheck="false">
+            <button class="mbtn" id="saveNameOk" type="button">save</button>
+          </div>
         </section>
       </div>
     </div>

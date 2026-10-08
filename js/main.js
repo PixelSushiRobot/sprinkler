@@ -4,6 +4,7 @@ import { addMany } from './search.js';
 import { restoreDraft, initDraftAutosave } from './draft.js';
 import './presets.js';
 import './overlay.js';
+import './lists.js';
 
 renderAll();
 initDraftAutosave();

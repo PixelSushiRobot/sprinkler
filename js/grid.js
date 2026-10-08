@@ -50,6 +50,7 @@ export function renderGrid() {
   $('count').textContent = creators.length + ' / 9';
   $('sprinkleBtn').disabled = !on;
   $('shareListBtn').disabled = creators.length === 0;
+  $('saveListBtn').disabled = creators.length === 0;
   $('splitfoot').textContent = on ? `${pot} XTZ across nine · one transaction` : `plant ${9 - creators.length} more`;
   layoutNums();
   window.dispatchEvent(new Event('sprinkler:change'));   // draft autosave listens for this

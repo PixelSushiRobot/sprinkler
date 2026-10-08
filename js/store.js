@@ -5,8 +5,8 @@
 
 const KEY = {
   draft: 'sprinkler-draft',
-  // lists:   'sprinkler-lists',     // named saved lists   — later slice
-  // history: 'sprinkler-history',   // your sprinkles       — later slice
+  lists: 'sprinkler-lists',          // named saved lists
+  // history: 'sprinkler-history',   // your sprinkles — later slice
 };
 
 function read(k) { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
@@ -18,5 +18,9 @@ export const store = {
     get: () => read(KEY.draft),
     set: v => write(KEY.draft, v),
     clear: () => wipe(KEY.draft),
+  },
+  lists: {
+    all: () => read(KEY.lists) || [],
+    save: arr => write(KEY.lists, arr),
   },
 };
