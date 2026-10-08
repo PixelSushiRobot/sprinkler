@@ -52,6 +52,7 @@ export function renderGrid() {
   $('shareListBtn').disabled = creators.length === 0;
   $('splitfoot').textContent = on ? `${pot} XTZ across nine · one transaction` : `plant ${9 - creators.length} more`;
   layoutNums();
+  window.dispatchEvent(new Event('sprinkler:change'));   // draft autosave listens for this
 }
 function layoutNums() {
   const wrap = document.querySelector('.gridwrap'), nl = $('numlayer'); if (!wrap || !nl) return;
@@ -68,7 +69,7 @@ $('amount').addEventListener('input', renderGrid);
    (campaign slug > .tez name > wallet), in the arranged order, so the link round-trips
    through the same prefill parser main.js already uses. */
 const SHARE_LABEL = 'copy a share link';
-function shareToken(c) {
+export function shareToken(c) {
   if (c._slug) return c._slug;
   if (c._input && /\.tez$/i.test(c._input)) return c._input;
   return c.addr;
