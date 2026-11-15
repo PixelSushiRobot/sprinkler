@@ -4,6 +4,7 @@ import { NETS, payNet, getPayNetKey, setPayNetKey } from './config.js';
 import { creators, full, computeSplit, setLastHash } from './state.js';
 import { renderGarden } from './garden.js';
 import { escapeHTML } from './escape.js';
+import { wireSave } from './lists.js';
 import * as wallet from './wallet.js';
 
 /* overlay flow */
@@ -118,6 +119,7 @@ async function doSprinkle() {
   $('txLink').href = payNet().explorer + '/' + hash;
   $('shareText').textContent = SHARE_TEXT;
   $('confirmPane').style.display = 'none'; $('successPane').style.display = '';
+  saveAfter.reset();
   renderGarden();
   const t = encodeURIComponent(SHARE_TEXT);
   $('shareFc').href = 'https://farcaster.xyz/~/compose?text=' + t;
@@ -129,6 +131,9 @@ function closeOverlay() { $('overlay').classList.remove('show'); const b = $('sp
 function focusables() { return [...$('overlay').querySelectorAll('button,a[href],input,[tabindex]:not([tabindex="-1"])')].filter(el => el.offsetParent !== null && !el.disabled); }
 $('sprinkleBtn').onclick = openOverlay;
 $('confirmBtn').onclick = doSprinkle;
+// "save this nine as a list" on the success screen — right after sending is when a
+// list is most worth keeping. Same inline name field as the one under "sprinkle it".
+const saveAfter = wireSave({ btn: $('saveAfterBtn'), hide: $('saveAfterBtn'), pane: $('saveAfter'), input: $('saveAfterName'), ok: $('saveAfterOk'), cancel: $('saveAfterCancel') });
 wallet.walletReady().then(async ok => { try { if (ok) { walletAddr = await wallet.getActive(); syncConfirmReady(); } } catch (e) { } });
 window.addEventListener('tez-account', e => { walletAddr = e.detail || null; syncConfirmReady(); });
 $('ovClose').onclick = closeOverlay;

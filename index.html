@@ -80,7 +80,6 @@
             <div class="results" id="results" role="listbox" aria-label="Results"></div>
           </div>
           <div class="err" id="addErr"></div>
-          <div class="saved" id="savedLists"></div>
         </section>
 
         <section class="panel">
@@ -115,11 +114,14 @@
           </div>
           <div class="splitfoot" id="splitfoot"></div>
           <button class="btn" id="sprinkleBtn" style="margin-top:16px;width:100%" disabled>sprinkle it</button>
-          <button class="sharelink" id="shareListBtn" type="button" disabled>copy a share link</button>
-          <button class="sharelink" id="saveListBtn" type="button" disabled>save this nine as a list</button>
+          <div class="actrow" id="actRow">
+            <button class="btn ghost" id="saveListBtn" type="button" disabled>save list</button>
+            <button class="btn ghost" id="shareListBtn" type="button" disabled>copy link</button>
+          </div>
           <div class="savename" id="saveName" style="display:none">
-            <input id="listName" type="text" placeholder="name this list" maxlength="40" autocomplete="off" spellcheck="false">
+            <input id="listName" type="text" placeholder="name this list" maxlength="40" autocomplete="off" spellcheck="false" aria-label="List name">
             <button class="mbtn" id="saveNameOk" type="button">save</button>
+            <button class="mbtn" id="saveNameCancel" type="button">cancel</button>
           </div>
         </section>
       </div>
@@ -146,6 +148,12 @@
           <div class="success-head">Garden watered ✓</div>
           <p class="ov-lead" id="successLead"></p>
           <a class="txlink" id="txLink" target="_blank" rel="noopener">view on tzkt ↗</a>
+          <button class="btn ghost" id="saveAfterBtn" type="button" style="width:100%">save this nine as a list</button>
+          <div class="savename" id="saveAfter" style="display:none">
+            <input id="saveAfterName" type="text" placeholder="name this list" maxlength="40" autocomplete="off" spellcheck="false" aria-label="List name">
+            <button class="mbtn" id="saveAfterOk" type="button">save</button>
+            <button class="mbtn" id="saveAfterCancel" type="button">cancel</button>
+          </div>
           <div class="share-label">Share your garden</div>
           <div class="share-box" id="shareText"></div>
           <button class="btn" id="shareX" style="width:100%">Share on X</button>

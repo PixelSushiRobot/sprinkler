@@ -69,7 +69,7 @@ $('amount').addEventListener('input', renderGrid);
 /* share the current nine as a ?to= link — emits the nicest identifier per creator
    (campaign slug > .tez name > wallet), in the arranged order, so the link round-trips
    through the same prefill parser main.js already uses. */
-const SHARE_LABEL = 'copy a share link';
+const SHARE_LABEL = 'copy link';
 export function shareToken(c) {
   if (c._slug) return c._slug;
   if (c._input && /\.tez$/i.test(c._input)) return c._input;
@@ -89,7 +89,7 @@ async function copyShareLink() {
     try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
     ta.remove();
   }
-  btn.textContent = ok ? 'link copied ✓' : 'press ⌘C to copy';
+  btn.textContent = ok ? 'link copied ✓' : 'press ⌘C';
   btn.classList.toggle('copied', ok);
   clearTimeout(btn._t); btn._t = setTimeout(() => { btn.textContent = SHARE_LABEL; btn.classList.remove('copied'); }, 1800);
 }
