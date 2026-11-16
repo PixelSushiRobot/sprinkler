@@ -4,7 +4,7 @@ import { creators, makeCreator, atCap, MAX, clearCreators } from './state.js';
 import { ipfsURL, searchSources, enrichCreator, ttcrowdSearch, ttcrowdBrowse, ttcrowdResolve, ttcrowdStewards, warmSearch } from './api.js';
 import { renderAll } from './grid.js';
 import { escapeHTML } from './escape.js';
-import { getLists, findList, deleteList } from './lists.js';
+import { getLists, findList, deleteList, setLoadedList } from './lists.js';
 
 /* search — one combobox for everything. Empty + focused browses your saved lists,
    then active TTCrowd campaigns; typing switches to live objkt + hack.tez + teztree
@@ -217,6 +217,7 @@ async function loadList(id) {
   const tokens = (l.recipients || []).map(r => r && r.input).filter(Boolean).join(',');
   clearCreators(); renderAll();
   if (tokens) await addMany(tokens);
+  setLoadedList(l.id);                                   // saving again offers "update list"
   const summary = $('addErr').textContent;
   errNote('loaded ' + l.name + (summary ? ' · ' + summary : ''));
 }

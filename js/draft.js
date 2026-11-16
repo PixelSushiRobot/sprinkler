@@ -12,6 +12,7 @@ import { creators, method, yoloLevel, setMethod, setYoloLevel } from './state.js
 import { renderAll, shareToken } from './grid.js';
 import { addMany } from './search.js';
 import { store } from './store.js';
+import { loadedList, setLoadedList } from './lists.js';
 
 const V = 1;
 let suspended = false, timer = null;
@@ -23,6 +24,7 @@ function serialize() {
     method,
     yolo: yoloLevel,
     recipients: creators.map(c => ({ input: shareToken(c), address: c.addr, name: c.name })),
+    list: loadedList()?.id || null,   // the saved list this garden came from, if any
   };
 }
 function saveNow() {
@@ -45,5 +47,5 @@ export function restoreDraft() {
   renderAll();
   $('amount').dispatchEvent(new Event('input'));           // re-light the matching preset chip
   const tokens = d.recipients.map(r => r && r.input).filter(Boolean).join(',');
-  Promise.resolve(tokens ? addMany(tokens) : null).finally(() => { suspended = false; scheduleSave(); });
+  Promise.resolve(tokens ? addMany(tokens) : null).finally(() => { setLoadedList(d.list); suspended = false; scheduleSave(); });
 }
