@@ -2,7 +2,7 @@
 
 **Live:** https://sprinkler.psr.fyi/
 
-Pour one pot of tez across a garden of creators — four, nine, or twelve, or up
+Pour one pot of tez across a garden of creators — four, six, nine, or twelve, or up
 to 100 in whale mode — in a
 single batched transaction. Pick your people, choose how to split, connect a
 wallet, sign once — everyone gets watered, and you get a shareable garden card.
@@ -42,8 +42,8 @@ review of this codebase (now fully remediated).
 ## What it does
 
 1. **Pick your people.** Search by name or paste addresses. The garden sizes
-   itself to the count — 2×2 up to four, 3×3 up to nine, 4×3 up to twelve —
-   and has to be complete to sprinkle, so the card is always a full grid. Past
+   itself to the count — 2×2 up to four, 3×2 up to six, 3×3 up to nine, 4×3 up to
+   twelve — and has to be complete to sprinkle, so the card is always a full grid. Past
    twelve it's **whale mode**: a scrolling list of up to 100, ready at any count,
    with a numbers card instead of a grid.
 2. **Pick a pot.** Any amount of tez, with 9 / 90 / 900 presets.

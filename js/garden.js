@@ -24,7 +24,7 @@ function drawImgCover(ctx, img, x, y, size) {
 /* avatar size, column gap and name length per garden — nine keeps the original card
    layout exactly; four goes bigger, twelve tighter. The block is centred vertically
    in the same band nine fills (y 190 → ~982). */
-const CARD = { 4: { av: 300, gap: 60, chars: 20 }, 9: { av: 210, gap: 40, chars: 15 }, 12: { av: 170, gap: 36, chars: 12 } };
+const CARD = { 4: { av: 300, gap: 60, chars: 20 }, 6: { av: 250, gap: 50, chars: 18 }, 9: { av: 210, gap: 40, chars: 15 }, 12: { av: 170, gap: 36, chars: 12 } };
 const NAME_ROW = 54, BAND = 792;
 function drawGarden(order, imgs) {
   const cv = $('gardenCanvas'); if (!cv) return; const ctx = cv.getContext('2d'), S = 1080, cs = getComputedStyle(document.documentElement);

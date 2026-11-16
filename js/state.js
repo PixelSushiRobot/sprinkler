@@ -28,14 +28,14 @@ export function setLastHash(h) { lastHash = h; }
 export function clearCreators() { creators.length = 0; }
 
 /* garden size follows the head count — always the smallest garden that fits, so it
-   grows as you add (2×2 → 3×3 → 4×3) and shrinks back as you remove. A garden has to
+   grows as you add (2×2 → 3×2 → 3×3 → 4×3) and shrinks back as you remove. A garden has to
    be complete to sprinkle, which keeps the card a full grid every time. Past twelve
    it's whale mode: a list of any size up to MAX, ready at whatever count you have. */
-export const SIZES = [4, 9, 12];
+export const SIZES = [4, 6, 9, 12];
 export const MAX = 100;
 const GRID_MAX = SIZES[SIZES.length - 1];
-const COLS = { 4: 2, 9: 3, 12: 4 };
-const WORDS = { 4: 'four', 9: 'nine', 12: 'twelve' };
+const COLS = { 4: 2, 6: 3, 9: 3, 12: 4 };
+const WORDS = { 4: 'four', 6: 'six', 9: 'nine', 12: 'twelve' };
 export function isWhale(n = creators.length) { return n > GRID_MAX; }
 export function gardenSize(n = creators.length) { return SIZES.find(s => s >= n) || n; }
 export function gardenCols(size = gardenSize()) { return COLS[size] || 1; }
