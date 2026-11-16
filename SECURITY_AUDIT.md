@@ -172,6 +172,21 @@ noted in the code comment as a further hardening step; pinning the exact
 version at least makes every deploy reproducible and any future bump an
 explicit, reviewable diff instead of a silent drift.
 
+**Update (2026-11-15):** bumped to `5.0.5`. A
+[coordinated advisory](https://forum.tezosagora.org/t/security-advisory-beacon-sdk-octez-connect-pairing-session-vulnerabilities-fixed-in-taquito-v25-1-1-and-the-cost-of-neglected-forks/7230)
+covers `@tezos-x/octez.connect-*` `<= 5.0.4`: the SDK accepted unsolicited
+pairing responses (anyone who learned the dApp's persistent communication
+public key could inject a wallet peer), auto-joined unvalidated Matrix room
+invites, and trusted unauthenticated `ChangeAccountRequest` / `Disconnect`
+messages. `5.0.5` (published 2026-11-13) ports the upstream fix.
+
+Impact on Sprinkler was limited: recipients come from the garden, never from
+the connected account, so a swapped account can't redirect a payout, and a
+rogue peer can't sign with the user's key. The realistic harm was a spoofed
+connected address, a fake "signed" response, or a dropped session. Users who
+suspect a stale or injected session can clear `beacon:*` keys in
+`localStorage` (or just disconnect) and re-pair.
+
 ## 4. Medium — no Content-Security-Policy
 
 Nothing in `index.html` sets a CSP (header or `<meta http-equiv>`). Now that

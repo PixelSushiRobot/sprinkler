@@ -16,7 +16,9 @@
    page could call it. See SECURITY_AUDIT.md finding #2. */
 import { NETS, getPayNetKey } from './config.js';
 
-const SDK_VERSION = '5.0.4';
+// 5.0.5 fixes the pairing/session advisory (rogue peer injection, unauthenticated
+// ChangeAccountRequest/Disconnect) that affects <= 5.0.4. See SECURITY_AUDIT.md #3.
+const SDK_VERSION = '5.0.5';
 
 let DAppClientCtor = null;
 let loadError = null;

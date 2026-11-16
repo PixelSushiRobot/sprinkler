@@ -136,7 +136,7 @@ custom RPC `https://rpc.shadownet.teztnets.com`, and fund it from
 ## Data / API stack
 
 - **[Octez Connect](https://github.com/trilitech/octez.connect)**
-  (`@tezos-x/octez.connect-sdk@5`, the tzip-10 wallet standard, formerly Beacon)
+  (`@tezos-x/octez.connect-sdk@5.0.5`, pinned in `js/wallet.js`, the tzip-10 wallet standard, formerly Beacon)
   — wallet connect + the batched payout. No Taquito: the wallet forges and signs,
   so there's no forging/bignumber dependency. Loaded via dynamic `import()` from
   esm.sh so a CDN failure surfaces an error instead of hanging.
