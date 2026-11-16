@@ -1,6 +1,6 @@
 import { $ } from './dom.js';
 import { drawAvatar } from './avatar.js';
-import { creators, full, displayOrder, lastHash, gardenSize, gardenCols, isWhale } from './state.js';
+import { creators, full, displayOrder, lastHash, gardenCols, isWhale } from './state.js';
 
 /* load an avatar for canvas use — crossOrigin so a clean load stays exportable. Some
    hosts (incl. a few TTCrowd campaign logos) send no CORS headers, which fails the
@@ -21,11 +21,16 @@ function drawImgCover(ctx, img, x, y, size) {
   try { ctx.drawImage(img, x + (size - dw) / 2, y + (size - dh) / 2, dw, dh); } catch (e) { ctx.restore(); return false; }
   ctx.restore(); return true;
 }
-/* avatar size, column gap and name length per garden — nine keeps the original card
-   layout exactly; four goes bigger, twelve tighter. The block is centred vertically
-   in the same band nine fills (y 190 → ~982). */
-const CARD = { 4: { av: 300, gap: 60, chars: 20 }, 6: { av: 250, gap: 50, chars: 18 }, 9: { av: 210, gap: 40, chars: 15 }, 12: { av: 170, gap: 36, chars: 12 } };
+/* card grid: same columns as the page (a lone creator gets the whole width), avatar size
+   and gap by column count, shrunk if the rows would overflow the band (y 190 → ~982).
+   A short last row centres itself, so any count reads as a deliberate shape. */
+const BASE = { 1: 360, 2: 300, 3: 250, 4: 180 }, GAP = { 1: 0, 2: 60, 3: 50, 4: 36 };
 const NAME_ROW = 54, BAND = 792;
+function cardLayout(n) {
+  const cols = n === 1 ? 1 : gardenCols(n), rows = Math.ceil(n / cols);
+  const av = Math.floor(Math.min(BASE[cols], BAND / rows - NAME_ROW));
+  return { cols, rows, av, gap: GAP[cols], chars: Math.round(av / 14) };
+}
 function drawGarden(order, imgs) {
   const cv = $('gardenCanvas'); if (!cv) return; const ctx = cv.getContext('2d'), S = 1080, cs = getComputedStyle(document.documentElement);
   const bg = (cs.getPropertyValue('--panel') || '#fff').trim(), ink = (cs.getPropertyValue('--ink') || '#111').trim(), sub = (cs.getPropertyValue('--muted') || '#777').trim(), line = (cs.getPropertyValue('--line') || '#ccc').trim();
@@ -40,10 +45,17 @@ function drawGarden(order, imgs) {
   ctx.fillStyle = sub; ctx.font = '18px "SF Mono", Menlo, monospace'; ctx.textAlign = 'left'; ctx.fillText('TX ' + (lastHash ? lastHash.slice(0, 12) + '…' + lastHash.slice(-6) : '—'), 66, 1032); ctx.textAlign = 'right'; ctx.fillText('MADE WITH SPRINKLER', S - 66, 1032); ctx.textAlign = 'left';
 }
 function drawGrid(ctx, S, order, imgs, ink) {
-  const size = gardenSize(), cols = gardenCols(size), rows = Math.ceil(size / cols), L = CARD[size] || CARD[9];
-  const av = L.av, colGap = L.gap, rowStride = av + NAME_ROW;
-  const startX = (S - (av * cols + colGap * (cols - 1))) / 2, startY = 190 + Math.max(0, (BAND - rows * rowStride) / 2);
-  order.forEach((origIdx, i) => { const c = creators[origIdx]; const col = i % cols, row = Math.floor(i / cols), x = startX + col * (av + colGap), y = startY + row * rowStride; const img = imgs && imgs[i]; if (!(img && drawImgCover(ctx, img, x, y, av))) drawAvatar(ctx, c.id, x, y, av); ctx.fillStyle = ink; ctx.font = '600 22px "SF Mono", Menlo, monospace'; ctx.textAlign = 'center'; let nm = c.name; if (nm.length > L.chars) nm = nm.slice(0, L.chars - 1) + '…'; ctx.fillText(nm, x + av / 2, y + av + 30); });
+  const n = order.length, L = cardLayout(n), av = L.av, rowStride = av + NAME_ROW;
+  const startY = 190 + Math.max(0, (BAND - L.rows * rowStride) / 2);
+  order.forEach((origIdx, i) => {
+    const c = creators[origIdx], col = i % L.cols, row = Math.floor(i / L.cols);
+    const inRow = Math.min(L.cols, n - row * L.cols), startX = (S - (av * inRow + L.gap * (inRow - 1))) / 2;
+    const x = startX + col * (av + L.gap), y = startY + row * rowStride;
+    const img = imgs && imgs[i]; if (!(img && drawImgCover(ctx, img, x, y, av))) drawAvatar(ctx, c.id, x, y, av);
+    ctx.fillStyle = ink; ctx.font = '600 22px "SF Mono", Menlo, monospace'; ctx.textAlign = 'center';
+    let nm = c.name; if (nm.length > L.chars) nm = nm.slice(0, L.chars - 1) + '…';
+    ctx.fillText(nm, x + av / 2, y + av + 30);
+  });
 }
 /* whale card: too many people for a grid of faces, so the head count is the hero —
    a big number, then a strip of the first STRIP avatars and a "+N" tile for the rest */

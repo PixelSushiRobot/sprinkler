@@ -1,7 +1,7 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
 import { NETS, payNet, getPayNetKey, setPayNetKey } from './config.js';
-import { creators, full, computeSplit, setLastHash, sizeWord } from './state.js';
+import { creators, full, computeSplit, setLastHash, countWord } from './state.js';
 import { renderGarden } from './garden.js';
 import { escapeHTML } from './escape.js';
 import { wireSave } from './lists.js';
@@ -10,7 +10,7 @@ import * as wallet from './wallet.js';
 /* overlay flow */
 // share text carries the real head count; set once per sprinkle, read by every share button
 let shareText = '';
-const shareTextFor = n => n + ' creators. 1 pot. zero spreadsheets. 🌱';
+const shareTextFor = n => n + (n === 1 ? ' creator' : ' creators') + '. 1 pot. zero spreadsheets. 🌱';
 function renderNetLabel() {
   const n = payNet(), el = document.getElementById('netLabel');
   if (el) el.textContent = n.testnet ? 'try it: real search · test payouts on ' + n.networkName : 'live on Tezos mainnet';
@@ -135,7 +135,7 @@ async function doSprinkle() {
   }
   setLastHash(hash);
   shareText = shareTextFor(creators.length);
-  $('successLead').textContent = pot + ' XTZ, sprinkled across ' + sizeWord() + '.';
+  $('successLead').textContent = pot + ' XTZ, sprinkled across ' + countWord() + (creators.length === 1 ? ' creator.' : ' creators.');
   $('txLink').href = payNet().explorer + '/' + hash;
   $('shareText').textContent = shareText;
   $('confirmPane').style.display = 'none'; $('successPane').style.display = '';

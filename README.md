@@ -2,8 +2,7 @@
 
 **Live:** https://sprinkler.psr.fyi/
 
-Pour one pot of tez across a garden of creators — four, six, nine, or twelve, or up
-to 100 in whale mode — in a
+Pour one pot of tez across a garden of creators — anywhere from one to 100 — in a
 single batched transaction. Pick your people, choose how to split, connect a
 wallet, sign once — everyone gets watered, and you get a shareable garden card.
 
@@ -18,7 +17,7 @@ css/style.css      all styles
 js/
   config.js        network config (Shadownet / Mainnet), active payout network
   dom.js           tiny $(id) helper
-  state.js         the garden's creators, garden sizes, split method, split math
+  state.js         the garden's creators, grid columns, split method, split math
   avatar.js        identicon generation (rng + SVG/canvas)
   escape.js        escapeHTML — for any third-party profile data going into innerHTML
   base58check.js   Tezos address checksum validation
@@ -41,11 +40,10 @@ review of this codebase (now fully remediated).
 
 ## What it does
 
-1. **Pick your people.** Search by name or paste addresses. The garden sizes
-   itself to the count — 2×2 up to four, 3×2 up to six, 3×3 up to nine, 4×3 up to
-   twelve — and has to be complete to sprinkle, so the card is always a full grid. Past
-   twelve it's **whale mode**: a scrolling list of up to 100, ready at any count,
-   with a numbers card instead of a grid.
+1. **Pick your people.** Search by name or paste addresses — anywhere from one to
+   100, ready to sprinkle at any count. Up to twelve the garden is a grid that picks
+   its columns from the count (a short last row centres itself on the card); past
+   twelve it becomes a scrolling list, with a numbers card instead of a grid.
 2. **Pick a pot.** Any amount of tez, with 9 / 90 / 900 presets.
 3. **Choose how to sprinkle.** Five split methods (below).
 4. **Sprinkle.** Connect a Tezos wallet and sign one batched payout — every
@@ -100,8 +98,7 @@ https://sprinkler.psr.fyi/?to=alice.tez,8scribo,tz1…
 
 Each token is tried as a wallet, then a `.tez` name, then a campaign slug
 (resolved against the campaign list, with a `/summary` fallback). The garden
-sizes itself to however many come through, leaving open slots to fill by hand if
-it isn't complete; extras past 100, duplicates, closed
+fits however many come through; extras past 100, duplicates, closed
 campaigns and invalid entries are dropped and counted in the status line. Only
 recipients are settable — no names, avatars, pot, split, network, or wallet
 action come from the URL, so a link can't label an address or move money.

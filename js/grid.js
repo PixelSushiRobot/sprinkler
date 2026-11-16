@@ -1,7 +1,7 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
 import { escapeHTML } from './escape.js';
-import { creators, method, yoloLevel, METHODS, setMethod, setYoloLevel, rollYolo, full, computeSplit, displayOrder, gardenSize, gardenCols, sizeWord, prevSize, isWhale, MAX, clearCreators } from './state.js';
+import { creators, method, yoloLevel, METHODS, setMethod, setYoloLevel, rollYolo, full, computeSplit, displayOrder, gardenCols, isWhale, MAX, clearCreators } from './state.js';
 
 const DICE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.4" fill="currentColor" stroke="none"/></svg>';
 function renderMethods() {
@@ -27,8 +27,8 @@ export function renderGrid() {
   if (dragging) return;
   const g = $('grid'), wrap = g.parentElement, keep = wrap.scrollTop;
   g.innerHTML = '';
-  const n = creators.length, size = gardenSize(), whale = isWhale(n);
-  g.style.setProperty('--cols', gardenCols(size));
+  const n = creators.length, whale = isWhale(n), cols = gardenCols(n);
+  g.style.setProperty('--cols', cols);
   g.classList.toggle('list', whale); wrap.classList.toggle('list', whale);
   const pot = Math.max(0, +$('amount').value || 0);
   const on = full(), split = on ? computeSplit() : [];
@@ -58,32 +58,26 @@ export function renderGrid() {
     t.querySelector('.x').onclick = e => { e.stopPropagation(); creators.splice(origIdx, 1); renderAll(); };
     g.appendChild(t);
   });
-  if (!whale) for (let k = n; k < size; k++) { const s = document.createElement('div'); s.className = 'eslot'; s.textContent = '+'; g.appendChild(s); }
+  // open slots round the last row out (an empty garden shows a 2×2); room to add, not a requirement
+  const open = whale ? 0 : n === 0 ? 4 : (cols - n % cols) % cols;
+  for (let k = 0; k < open; k++) { const s = document.createElement('div'); s.className = 'eslot'; s.textContent = '+'; g.appendChild(s); }
   wrap.scrollTop = keep;
-  $('count').textContent = n + ' / ' + (whale ? MAX : size);
+  $('count').textContent = n + ' / ' + MAX;
   $('sprinkleBtn').disabled = !on;
   $('shareListBtn').disabled = n === 0;
   $('saveListBtn').disabled = n === 0;
   if (n === 0) disarmClear();
   $('clearBtn').hidden = n === 0;
-  $('splitfoot').textContent = on ? readyLine(pot, n, size, split) : fillHint(n, size);
+  $('splitfoot').textContent = on ? readyLine(pot, n, split) : 'plant someone to start';
   layoutNums();
   window.dispatchEvent(new Event('sprinkler:change'));   // draft autosave listens for this
 }
 // ready summary; flags tiny shares, which get likely once a big list splits a small pot
-function readyLine(pot, n, size, split) {
-  let s = isWhale(n) ? `${pot} XTZ across ${n} · whale mode · one transaction` : `${pot} XTZ across ${sizeWord(size)} · one transaction`;
+function readyLine(pot, n, split) {
+  let s = `${pot} XTZ across ${n} · one transaction`;
   const least = pot * Math.min(...split) / 100;
   if (pot > 0 && least < 0.1) s += ` · smallest share ${least.toFixed(2)} XTZ`;
   return s;
-}
-/* an incomplete garden can't sprinkle — say how to finish it, both ways when shrinking
-   to the next garden down is also an option (6 people: add 3, or remove 2 for four) */
-function fillHint(n, size) {
-  const add = size - n, prev = prevSize(size);
-  const grow = n === 0 ? `plant ${add} to start` : `plant ${add} more`;
-  if (n > 0 && prev && n > prev) return `${grow} · or remove ${n - prev} for a garden of ${sizeWord(prev)}`;
-  return grow;
 }
 function layoutNums() {
   const wrap = document.querySelector('.gridwrap'), nl = $('numlayer'); if (!wrap || !nl) return;

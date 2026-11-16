@@ -27,22 +27,17 @@ export function setYoloLevel(k) { yoloLevel = k; }
 export function setLastHash(h) { lastHash = h; }
 export function clearCreators() { creators.length = 0; }
 
-/* garden size follows the head count — always the smallest garden that fits, so it
-   grows as you add (2×2 → 3×2 → 3×3 → 4×3) and shrinks back as you remove. A garden has to
-   be complete to sprinkle, which keeps the card a full grid every time. Past twelve
-   it's whale mode: a list of any size up to MAX, ready at whatever count you have. */
-export const SIZES = [4, 6, 9, 12];
+/* any head count from 1 to MAX can sprinkle. Up to GRID_MAX the garden is a grid whose
+   column count follows the count (fewest rows without tiles getting too narrow; ties go
+   to the fuller last row); past that it's a scrolling list ("whale", internally only). */
 export const MAX = 100;
-const GRID_MAX = SIZES[SIZES.length - 1];
-const COLS = { 4: 2, 6: 3, 9: 3, 12: 4 };
-const WORDS = { 4: 'four', 6: 'six', 9: 'nine', 12: 'twelve' };
+export const GRID_MAX = 12;
+const COLS = [2, 2, 2, 3, 2, 3, 3, 4, 4, 3, 4, 4, 4];   // index = count; 0 is the empty 2×2
+const WORDS = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
 export function isWhale(n = creators.length) { return n > GRID_MAX; }
-export function gardenSize(n = creators.length) { return SIZES.find(s => s >= n) || n; }
-export function gardenCols(size = gardenSize()) { return COLS[size] || 1; }
-export function sizeWord(size = gardenSize()) { return WORDS[size] || String(size); }
-// the next garden down — what you'd shrink to by removing people (null at the smallest)
-export function prevSize(size = gardenSize()) { const i = SIZES.indexOf(size); return i > 0 ? SIZES[i - 1] : null; }
-export function full() { return creators.length > 0 && creators.length === gardenSize(); }   // complete → ready
+export function gardenCols(n = creators.length) { return COLS[n] || 1; }
+export function countWord(n = creators.length) { return WORDS[n] || String(n); }
+export function full() { return creators.length > 0; }   // anyone planted → ready
 export function atCap() { return creators.length >= MAX; }                                  // can't add more
 
 export const METHODS = [

@@ -301,8 +301,8 @@ documented residual-trust note.
   already-validated garden and copies it via `navigator.clipboard.writeText` (with a
   hidden-`<textarea>` `execCommand` fallback). No external call, no untrusted input,
   output is our own URL.
-- **Garden sizes + whale mode** (`js/state.js`). A batch is now 4, 9 or 12
-  recipients, or 13–100 in whale mode, still as **one** operation the wallet forges
+- **Any head count** (`js/state.js`). A batch is now anywhere from 1 to 100
+  recipients, still as **one** operation the wallet forges
   and signs — no splitting into multiple operations. A bigger batch raises the
   stakes of a single swapped address in a pasted or loaded list, so the confirm
   dialog (`js/overlay.js` `confirmWarnings`) flags every recipient that never
