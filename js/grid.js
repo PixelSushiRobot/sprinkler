@@ -27,7 +27,7 @@ export function renderGrid() {
   if (dragging) return;
   const g = $('grid'), wrap = g.parentElement, keep = wrap.scrollTop;
   g.innerHTML = '';
-  const n = creators.length, whale = isWhale(n), cols = gardenCols(n);
+  const n = creators.length, whale = isWhale(n), cols = n <= 4 ? 2 : gardenCols(n);   // page holds 2×2 until the 5th, so adding never shrinks it
   g.style.setProperty('--cols', cols);
   g.classList.toggle('list', whale); wrap.classList.toggle('list', whale);
   const pot = Math.max(0, +$('amount').value || 0);
@@ -58,8 +58,8 @@ export function renderGrid() {
     t.querySelector('.x').onclick = e => { e.stopPropagation(); creators.splice(origIdx, 1); renderAll(); };
     g.appendChild(t);
   });
-  // open slots round the last row out (an empty garden shows a 2×2); room to add, not a requirement
-  const open = whale ? 0 : n === 0 ? 4 : (cols - n % cols) % cols;
+  // open slots round the grid out to at least 2×2, then to a full last row; room to add, not a requirement
+  const open = whale ? 0 : Math.max(4 - n, (cols - n % cols) % cols);
   for (let k = 0; k < open; k++) { const s = document.createElement('div'); s.className = 'eslot'; s.textContent = '+'; g.appendChild(s); }
   wrap.scrollTop = keep;
   $('count').textContent = n + ' / ' + MAX;
