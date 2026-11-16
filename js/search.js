@@ -1,6 +1,6 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
-import { creators, makeCreator, full, clearCreators } from './state.js';
+import { creators, makeCreator, atCap, MAX, clearCreators } from './state.js';
 import { ipfsURL, searchSources, enrichCreator, ttcrowdSearch, ttcrowdBrowse, ttcrowdResolve, ttcrowdStewards, warmSearch } from './api.js';
 import { renderAll } from './grid.js';
 import { escapeHTML } from './escape.js';
@@ -33,7 +33,7 @@ function errNote(t) { const e = $('addErr'); e.textContent = t; e.classList.remo
 // each a public directory anyone can put arbitrary text into. See
 // SECURITY_AUDIT.md finding #1.
 function rowManual(q, c) { return `<div class="ritem" data-manual="${escapeHTML(q)}"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">add ${escapeHTML(c.name)}</div><div class="rs">${c._isAddr ? 'tezos address' : '.tez name'}</div></div></div>`; }
-function rowDup(q, c) { return `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${escapeHTML(c.name)}</div><div class="rs" style="color:var(--dim)">already in your nine</div></div></div>`; }
+function rowDup(q, c) { return `<div class="ritem" style="cursor:default"><img class="av" src="${avatarSVG(q)}" alt=""><div class="info"><div class="rn">${escapeHTML(c.name)}</div><div class="rs" style="color:var(--dim)">already in your garden</div></div></div>`; }
 function rowFound(m) { const short = m.address.slice(0, 8) + '…' + m.address.slice(-4); const sub = [short, m.src, m.meta].filter(Boolean).join(' · '); return `<div class="ritem" data-addr="${escapeHTML(m.address)}" data-name="${escapeHTML(m.name || '')}" data-logo="${escapeHTML(m.logo || '')}"><img class="av" src="${escapeHTML(m.logo ? ipfsURL(m.logo) : avatarSVG(m.address))}" alt=""><div class="info"><div class="rn">${escapeHTML(m.name)}</div><div class="rs">${escapeHTML(sub)}</div></div></div>`; }
 function rowNote(t) { return `<div class="ritem" style="cursor:default"><div class="info"><div class="rn" style="color:var(--dim)">${escapeHTML(t)}</div></div></div>`; }
 // TTCrowd campaign row — carries the payout wallet inline (data-caddr) so a pick
@@ -44,7 +44,7 @@ function rowCampaign(m) { const img = m.logo ? escapeHTML(m.logo) : avatarSVG(m.
 function rowGroup(t, fill) { return `<div class="rgroup"><span>${escapeHTML(t)}</span>${fill ? '<button type="button" class="rfill" data-fill>fill all</button>' : ''}</div>`; }
 
 /* saved-list row — a small avatar stack (so it reads as a group, not one creator),
-   the name, and a meta line that warns before a load replaces a nine in progress.
+   the name, and a meta line that warns before a load replaces a garden in progress.
    Everything here comes from local storage, which this app wrote — but names and
    avatar URLs originally came from public directories, so they're escaped the same
    as rowFound, and an avatar only renders if it's an https: or data:image URL. */
@@ -142,7 +142,7 @@ function enrichStewards(box, camps, seq) {
 /* merge a source's rows into the current generation's de-duped creator map. Insertion
    order is fixed the first time an address is seen; a later source with the same address
    only merges its tag/avatar/meta — it never moves an existing row. Creators already in
-   the nine are skipped, matching the old filter. */
+   the garden are skipped, matching the old filter. */
 function mergeCreators(rows) {
   for (const m of rows || []) {
     if (!m.address || creators.some(x => x.addr === m.address)) continue;
@@ -210,7 +210,7 @@ async function renderBrowse() {
   enrichStewards(box, camps, seq);
 }
 
-/* load a saved list — replaces the current nine (the row warned if there was one),
+/* load a saved list — replaces the current garden (the row warned if there was one),
    replaying stored tokens through addMany so everything re-resolves live */
 async function loadList(id) {
   const l = findList(id); if (!l) return;
@@ -223,11 +223,11 @@ async function loadList(id) {
 
 function addFound(addr, name, logo) {
   errNote('');
-  if (full()) { errShow("that's nine — that's the whole point"); return; }
+  if (atCap()) { errShow("that's twelve — the garden's full"); return; }
   const c = makeCreator(addr); if (!c) return;
   if (name) { c.name = name; c._named = true; }
   if (logo) c.avatar = ipfsURL(logo);
-  if (creators.some(x => x.id === c.id)) { errShow('already in your nine'); return; }
+  if (creators.some(x => x.id === c.id)) { errShow('already in your garden'); return; }
   creators.push(c); renderAll(); enrichCreator(c);
 }
 function clearSearch() { nav = { activeId: null, userMoved: false }; cur = null; $('search').value = ''; const b = $('results'); b.classList.remove('show'); b.innerHTML = ''; $('search').setAttribute('aria-expanded', 'false'); }
@@ -236,7 +236,7 @@ function hideResults() { $('results').classList.remove('show'); $('search').setA
 /* shared add path for a resolved campaign row (address/closed carried inline).
    Returns a status so both the single-click and batch-fill callers can report it. */
 function tryAddCampaign(m) {
-  if (full()) return 'over';
+  if (atCap()) return 'over';
   if (!m.address) return 'noaddr';
   if (m.closed) return 'closed';
   const c = makeCreator(m.address);
@@ -255,11 +255,11 @@ async function addCampaign(slug, name, logo, addr, closed) {
   const m = { slug, name, logo: logo || null, address: addr || null, closed: !!closed };
   if (!m.address) { let info = null; try { info = await ttcrowdResolve(slug); } catch (e) { } if (info) { m.address = info.address; m.closed = m.closed || info.closed; m.logo = m.logo || info.avatar; } }
   const st = tryAddCampaign(m);
-  const msg = { over: "that's nine — that's the whole point", noaddr: "couldn't load that campaign", closed: "that campaign isn't taking donations right now", invalid: 'that campaign wallet looks invalid', dup: 'already in your nine' };
+  const msg = { over: "that's twelve — the garden's full", noaddr: "couldn't load that campaign", closed: "that campaign isn't taking donations right now", invalid: 'that campaign wallet looks invalid', dup: 'already in your garden' };
   if (st !== 'added') { errShow(msg[st] || ''); return; }
   renderAll();
 }
-// fill the remaining slots with active campaigns (stops at nine)
+// add active campaigns until the garden hits its max
 async function fillCampaigns() {
   errNote('');
   let camps = []; try { camps = await ttcrowdBrowse(); } catch (e) { }
@@ -271,14 +271,14 @@ async function fillCampaigns() {
   if (dup) bits.push(`${dup} already in`);
   if (closed) bits.push(`${closed} not taking donations`);
   if (!bits.length) bits.push('no active campaigns to add');
-  else if (full()) bits.push('nine full');
+  else if (atCap()) bits.push('garden full');
   errNote(bits.join(' · '));
 }
-function addCreator(v) { errNote(''); if (full()) { errShow("that's nine — that's the whole point"); return; } const c = makeCreator(v); if (!c) { errShow("not a tz address or a .tez name"); return; } if (creators.some(x => x.id === c.id)) { errShow('already in your nine'); return; } creators.push(c); renderAll(); enrichCreator(c); }
+function addCreator(v) { errNote(''); if (atCap()) { errShow("that's twelve — the garden's full"); return; } const c = makeCreator(v); if (!c) { errShow("not a tz address or a .tez name"); return; } if (creators.some(x => x.id === c.id)) { errShow('already in your garden'); return; } creators.push(c); renderAll(); enrichCreator(c); }
 /* a bare TTCrowd slug — no dots or spaces (those are .tez names or junk) */
 function isSlug(t) { return /^[a-z0-9][a-z0-9-]{1,60}$/i.test(t); }
 /* paste a whole list at once — newline / comma / space / semicolon separated. Also the
-   ?to= prefill path in main.js, so a link gets the same validation, dedupe and nine-cap
+   ?to= prefill path in main.js, so a link gets the same validation, dedupe and size cap
    as a paste. Each token is tried as a wallet / .tez first, then as a TTCrowd campaign
    slug (resolved from the cached list, with a /summary fallback for one not listed). */
 export async function addMany(text) {
@@ -287,7 +287,7 @@ export async function addMany(text) {
   const list = await ttcrowdBrowse().catch(() => []);
   let added = 0, dup = 0, bad = 0, over = 0, closed = 0;
   for (const tok of tokens) {
-    if (full()) { over++; continue; }
+    if (atCap()) { over++; continue; }
     const c = makeCreator(tok);
     if (c) {                                                  // wallet or .tez name
       if (creators.some(x => x.id === c.id)) { dup++; continue; }
@@ -307,7 +307,7 @@ export async function addMany(text) {
   if (dup) bits.push(`${dup} already in`);
   if (closed) bits.push(`${closed} not taking donations`);
   if (bad) bits.push(`${bad} not valid`);
-  if (over) bits.push(`${over} over the nine`);
+  if (over) bits.push(`${over} over the max of ${MAX}`);
   errNote(bits.join(' · '));
   clearSearch();
 }

@@ -53,7 +53,7 @@ export async function enrichCreator(c) {
     // catch a mistyped/corrupted address before it's ever shown as "resolved" —
     // the shape regex in makeCreator lets a bad checksum through, and a wallet
     // would otherwise be the first thing to reject it, well after the user has
-    // reviewed the whole nine-recipient batch
+    // reviewed the whole batch
     if (!(await isValidTezosAddress(c.addr))) {
       c._err = 'invalid address'; c._loading = false;
       renderAll(); syncConfirmReady(); return;

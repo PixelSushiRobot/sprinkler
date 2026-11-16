@@ -1,4 +1,4 @@
-/* model — the nine creators, the split method, and the split math */
+/* model — the garden's creators, the split method, and the split math */
 
 export function makeCreator(input) {
   input = input.trim();
@@ -27,10 +27,23 @@ export function setYoloLevel(k) { yoloLevel = k; }
 export function setLastHash(h) { lastHash = h; }
 export function clearCreators() { creators.length = 0; }
 
-export function full() { return creators.length === 9; }
+/* garden size follows the head count — always the smallest garden that fits, so it
+   grows as you add (2×2 → 3×3 → 4×3) and shrinks back as you remove. A garden has to
+   be complete to sprinkle, which keeps the card a full grid every time. */
+export const SIZES = [4, 9, 12];
+export const MAX = SIZES[SIZES.length - 1];
+const COLS = { 4: 2, 9: 3, 12: 4 };
+const WORDS = { 4: 'four', 9: 'nine', 12: 'twelve' };
+export function gardenSize(n = creators.length) { return SIZES.find(s => s >= n) || MAX; }
+export function gardenCols(size = gardenSize()) { return COLS[size] || 3; }
+export function sizeWord(size = gardenSize()) { return WORDS[size] || String(size); }
+// the next garden down — what you'd shrink to by removing people (null at the smallest)
+export function prevSize(size = gardenSize()) { const i = SIZES.indexOf(size); return i > 0 ? SIZES[i - 1] : null; }
+export function full() { return creators.length > 0 && creators.length === gardenSize(); }   // complete → ready
+export function atCap() { return creators.length >= MAX; }                                  // can't add more
 
 export const METHODS = [
-  { k: 'equal', n: 'Everyone Eats', t: 'EQUAL', d: 'No one left behind — an equal pour for all nine.' },
+  { k: 'equal', n: 'Everyone Eats', t: 'EQUAL', d: 'No one left behind — an equal pour for everyone.' },
   { k: 'boss', n: 'I Am The Boss', t: 'RANKED', d: 'Drag to rank — #1 gets the biggest pour.' },
   { k: 'tree', n: 'Big Tree Energy', t: 'MOST ACTIVE', d: 'More to the most active onchain.' },
   { k: 'ants', n: 'Save The Ants', t: 'SMOL BAGS', d: 'More to the least-funded so far.' },
@@ -64,7 +77,9 @@ function effFloor() { return (method === 'yolo' && yoloLevel === 'jackpot') ? 2.
 export function computeSplit() {
   const n = creators.length; if (n === 0) return [];
   let w = rawWeights(); if (!w || w.every(x => x <= 0)) w = creators.map(() => 1);
-  const eff = Math.min(effFloor(), 100 / n), rem = 100 - eff * n, sumW = w.reduce((a, b) => a + b, 0);
+  // everyone's guaranteed floor is capped at 45% of an equal share, so weighting still
+  // has room as the garden grows — identical to the old 5% at four and nine
+  const eff = Math.min(effFloor(), 0.45 * 100 / n), rem = 100 - eff * n, sumW = w.reduce((a, b) => a + b, 0);
   return w.map(x => eff + (sumW > 0 ? rem * (x / sumW) : rem / n));
 }
 export function displayOrder() { return creators.map((c, i) => i); }

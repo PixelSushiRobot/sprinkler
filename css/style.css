@@ -719,7 +719,7 @@
     /* grid of tiles */
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
       gap: var(--sp-3)
     }
 

@@ -9,9 +9,9 @@ import './lists.js';
 renderAll();
 initDraftAutosave();
 
-/* ?to=alice.tez,tz1…,8scribo prefills the nine through the same path as a pasted
+/* ?to=alice.tez,tz1…,8scribo prefills the garden through the same path as a pasted
    list — wallets, .tez names, and TTCrowd campaign slugs. Names/avatars still come
-   from our own lookups, never from the link. Fewer than nine just leaves open slots;
+   from our own lookups, never from the link. The garden sizes itself to the count;
    nothing else (pot, split, network, wallet) is settable from a URL.
    An explicit ?to= link wins over any saved draft; with no link we restore the
    draft so you pick up where you left off. Either way autosave then tracks it. */

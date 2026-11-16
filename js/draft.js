@@ -1,4 +1,4 @@
-/* the working draft — the in-progress nine, pot, and method/wildness, auto-saved
+/* the working draft — the in-progress garden, pot, and method/wildness, auto-saved
    to local storage and restored when you come back. This is "pick up where you
    left off", distinct from named saved lists (recipients only, a later feature).
 

@@ -1,14 +1,16 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
 import { NETS, payNet, getPayNetKey, setPayNetKey } from './config.js';
-import { creators, full, computeSplit, setLastHash } from './state.js';
+import { creators, full, computeSplit, setLastHash, sizeWord } from './state.js';
 import { renderGarden } from './garden.js';
 import { escapeHTML } from './escape.js';
 import { wireSave } from './lists.js';
 import * as wallet from './wallet.js';
 
 /* overlay flow */
-const SHARE_TEXT = '9 creators. 1 pot. zero spreadsheets. 🌱';
+// share text carries the real head count; set once per sprinkle, read by every share button
+let shareText = '';
+const shareTextFor = n => n + ' creators. 1 pot. zero spreadsheets. 🌱';
 function renderNetLabel() {
   const n = payNet(), el = document.getElementById('netLabel');
   if (el) el.textContent = n.testnet ? 'try it: real search · test payouts on ' + n.networkName : 'live on Tezos mainnet';
@@ -25,7 +27,7 @@ async function setPayNet(key) {
 let walletAddr = null;
 
 const shortAddr = a => a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
-function recipientsReady() { return creators.length === 9 && creators.every(c => c.addr && !c._loading && !c._err); }
+function recipientsReady() { return full() && creators.every(c => c.addr && !c._loading && !c._err); }
 export function syncConfirmReady() { if ($('overlay').classList.contains('show')) renderWalletState(); }
 
 function renderWalletState() {
@@ -75,6 +77,7 @@ function openOverlay() {
   $('sprinkleErr').textContent = '';
   renderWalletState();
   $('rcptAmt').textContent = pot + ' XTZ';
+  $('rcptAcross').textContent = creators.length + ' creators · one transaction';
   $('confirmBtn').textContent = 'sprinkle ' + pot + ' XTZ';
   const idx = creators.map((c, i) => i);
   const maxPc = Math.max(...split, 0.0001);
@@ -115,13 +118,14 @@ async function doSprinkle() {
     return;
   }
   setLastHash(hash);
-  $('successLead').textContent = pot + ' XTZ, sprinkled across nine.';
+  shareText = shareTextFor(creators.length);
+  $('successLead').textContent = pot + ' XTZ, sprinkled across ' + sizeWord() + '.';
   $('txLink').href = payNet().explorer + '/' + hash;
-  $('shareText').textContent = SHARE_TEXT;
+  $('shareText').textContent = shareText;
   $('confirmPane').style.display = 'none'; $('successPane').style.display = '';
   saveAfter.reset();
   renderGarden();
-  const t = encodeURIComponent(SHARE_TEXT);
+  const t = encodeURIComponent(shareText);
   $('shareFc').href = 'https://farcaster.xyz/~/compose?text=' + t;
   $('shareBs').href = 'https://bsky.app/intent/compose?text=' + t;
 }
@@ -131,7 +135,7 @@ function closeOverlay() { $('overlay').classList.remove('show'); const b = $('sp
 function focusables() { return [...$('overlay').querySelectorAll('button,a[href],input,[tabindex]:not([tabindex="-1"])')].filter(el => el.offsetParent !== null && !el.disabled); }
 $('sprinkleBtn').onclick = openOverlay;
 $('confirmBtn').onclick = doSprinkle;
-// "save this nine as a list" on the success screen — right after sending is when a
+// "save this garden as a list" on the success screen — right after sending is when a
 // list is most worth keeping. Same inline name field as the one under "sprinkle it".
 const saveAfter = wireSave({ btn: $('saveAfterBtn'), hide: $('saveAfterBtn'), pane: $('saveAfter'), input: $('saveAfterName'), ok: $('saveAfterOk'), cancel: $('saveAfterCancel') });
 wallet.walletReady().then(async ok => { try { if (ok) { walletAddr = await wallet.getActive(); syncConfirmReady(); } } catch (e) { } });
@@ -161,8 +165,8 @@ $('overlay').addEventListener('keydown', e => {
   if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 });
-$('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT), '_blank');
-$('copyBtn').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(SHARE_TEXT); $('copyBtn').textContent = 'copied ✓'; setTimeout(() => $('copyBtn').textContent = 'Copy text', 1400); };
+$('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText), '_blank');
+$('copyBtn').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(shareText); $('copyBtn').textContent = 'copied ✓'; setTimeout(() => $('copyBtn').textContent = 'Copy text', 1400); };
 $('dlBtn').onclick = () => { try { const a = document.createElement('a'); a.download = 'my-garden.png'; a.href = $('gardenCanvas').toDataURL('image/png'); a.click(); } catch (e) { console.error('[sprinkler] card export failed (tainted canvas?):', e); $('sprinkleErr').textContent = "couldn't export the card — try again"; } };
 /* native share sheet WITH the card image — the only way to actually attach the PNG,
    since the X/Farcaster/Bluesky intent links carry text only. Feature-detected: the
@@ -172,7 +176,7 @@ async function shareCard() {
   try { const blob = await new Promise(r => $('gardenCanvas').toBlob(r, 'image/png')); if (!blob) throw 0; file = new File([blob], 'my-garden.png', { type: 'image/png' }); }
   catch (e) { $('sprinkleErr').textContent = "couldn't build the card image"; return; }
   if (!(navigator.canShare && navigator.canShare({ files: [file] }))) { $('sprinkleErr').textContent = 'image sharing isn’t supported here — use ↓ Card'; return; }
-  try { await navigator.share({ files: [file], text: SHARE_TEXT }); } catch (e) { /* user dismissed the sheet */ }
+  try { await navigator.share({ files: [file], text: shareText }); } catch (e) { /* user dismissed the sheet */ }
 }
 try {
   const probe = new File([new Blob(['x'])], 'x.png', { type: 'image/png' });

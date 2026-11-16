@@ -2,9 +2,9 @@
 
 **Live:** https://sprinkler.psr.fyi/
 
-Pour one pot of tez across nine creators in a single batched transaction. Pick
-nine, choose how to split, connect a wallet, sign once — everyone gets watered,
-and you get a shareable garden card.
+Pour one pot of tez across a garden of creators — four, nine, or twelve — in a
+single batched transaction. Pick your people, choose how to split, connect a
+wallet, sign once — everyone gets watered, and you get a shareable garden card.
 
 Plain static site — `index.html`, `css/style.css`, and a handful of native ES
 modules under `js/`. No bundler, no build step: every `js/*.js` file is
@@ -17,12 +17,12 @@ css/style.css      all styles
 js/
   config.js        network config (Shadownet / Mainnet), active payout network
   dom.js           tiny $(id) helper
-  state.js         the nine creators, split method, split math
+  state.js         the garden's creators, garden sizes, split method, split math
   avatar.js        identicon generation (rng + SVG/canvas)
   escape.js        escapeHTML — for any third-party profile data going into innerHTML
   base58check.js   Tezos address checksum validation
   api.js           TzKT / objkt / hack.tez / Teztree / TTCrowd resolution & search
-  grid.js          the "your nine" grid, drag-to-reorder, method picker, share link
+  grid.js          the "your garden" grid, drag-to-reorder, method picker, share link
   search.js        the search box, campaign browse & results dropdown
   presets.js       the 9 / 90 / 900 / Custom pot chips
   garden.js        the shareable "garden" canvas card
@@ -40,11 +40,13 @@ review of this codebase (now fully remediated).
 
 ## What it does
 
-1. **Pick nine.** Search by name or paste addresses. Nine recipients, no more.
+1. **Pick your people.** Search by name or paste addresses. The garden sizes
+   itself to the count — 2×2 up to four, 3×3 up to nine, 4×3 up to twelve —
+   and has to be complete to sprinkle, so the card is always a full grid.
 2. **Pick a pot.** Any amount of tez, with 9 / 90 / 900 presets.
 3. **Choose how to sprinkle.** Five split methods (below).
-4. **Sprinkle.** Connect a Tezos wallet and sign one batched payout — nine
-   transfers in a single operation, amounts computed in exact mutez so the
+4. **Sprinkle.** Connect a Tezos wallet and sign one batched payout — every
+   transfer in a single operation, amounts computed in exact mutez so the
    shares sum precisely to the pot.
 5. **Share.** A generated "garden" card with everyone's avatar, plus a link to
    the transaction and share buttons (X, Farcaster, Bluesky).
@@ -54,7 +56,7 @@ review of this codebase (now fully remediated).
 Every method clears a small floor first, so nobody gets dust and no two shares
 tie. Then the remainder is distributed by the method's weights:
 
-- **Everyone Eats** — equal pour for all nine.
+- **Everyone Eats** — equal pour for everyone.
 - **I Am The Boss** — drag to rank; #1 gets the biggest pour.
 - **Big Tree Energy** — more to the most active onchain (by transaction count).
 - **Save The Ants** — more to the least-funded (by current wallet balance).
@@ -94,14 +96,15 @@ https://sprinkler.psr.fyi/?to=alice.tez,8scribo,tz1…
 ```
 
 Each token is tried as a wallet, then a `.tez` name, then a campaign slug
-(resolved against the campaign list, with a `/summary` fallback). Fewer than
-nine leaves open slots to fill by hand; extras past nine, duplicates, closed
+(resolved against the campaign list, with a `/summary` fallback). The garden
+sizes itself to however many come through, leaving open slots to fill by hand if
+it isn't complete; extras past twelve, duplicates, closed
 campaigns and invalid entries are dropped and counted in the status line. Only
 recipients are settable — no names, avatars, pot, split, network, or wallet
 action come from the URL, so a link can't label an address or move money.
 
-The **"copy a share link"** action under *sprinkle it* does the reverse: it
-serializes your current nine back into a `?to=` URL — emitting a campaign slug,
+The **copy link** button under *sprinkle it* does the reverse: it
+serializes your current garden back into a `?to=` URL — emitting a campaign slug,
 then a `.tez`, then the raw wallet, whichever is cleanest per recipient — in the
 order you've arranged them.
 

@@ -1,7 +1,7 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
 import { escapeHTML } from './escape.js';
-import { creators, method, yoloLevel, METHODS, setMethod, setYoloLevel, rollYolo, full, computeSplit, displayOrder } from './state.js';
+import { creators, method, yoloLevel, METHODS, setMethod, setYoloLevel, rollYolo, full, computeSplit, displayOrder, gardenSize, gardenCols, sizeWord, prevSize } from './state.js';
 
 const DICE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.4" fill="currentColor" stroke="none"/></svg>';
 function renderMethods() {
@@ -19,6 +19,8 @@ function renderMethods() {
 }
 export function renderGrid() {
   const g = $('grid'); g.innerHTML = '';
+  const n = creators.length, size = gardenSize();
+  g.style.setProperty('--cols', gardenCols(size));
   const pot = Math.max(0, +$('amount').value || 0);
   const on = full(), split = on ? computeSplit() : [];
   const maxPc = on ? Math.max(...split, 0.0001) : 1;
@@ -46,14 +48,22 @@ export function renderGrid() {
     t.querySelector('.x').onclick = e => { e.stopPropagation(); creators.splice(origIdx, 1); renderAll(); };
     g.appendChild(t);
   });
-  for (let k = creators.length; k < 9; k++) { const s = document.createElement('div'); s.className = 'eslot'; s.textContent = '+'; g.appendChild(s); }
-  $('count').textContent = creators.length + ' / 9';
+  for (let k = n; k < size; k++) { const s = document.createElement('div'); s.className = 'eslot'; s.textContent = '+'; g.appendChild(s); }
+  $('count').textContent = n + ' / ' + size;
   $('sprinkleBtn').disabled = !on;
-  $('shareListBtn').disabled = creators.length === 0;
-  $('saveListBtn').disabled = creators.length === 0;
-  $('splitfoot').textContent = on ? `${pot} XTZ across nine · one transaction` : `plant ${9 - creators.length} more`;
+  $('shareListBtn').disabled = n === 0;
+  $('saveListBtn').disabled = n === 0;
+  $('splitfoot').textContent = on ? `${pot} XTZ across ${sizeWord(size)} · one transaction` : fillHint(n, size);
   layoutNums();
   window.dispatchEvent(new Event('sprinkler:change'));   // draft autosave listens for this
+}
+/* an incomplete garden can't sprinkle — say how to finish it, both ways when shrinking
+   to the next garden down is also an option (6 people: add 3, or remove 2 for four) */
+function fillHint(n, size) {
+  const add = size - n, prev = prevSize(size);
+  const grow = n === 0 ? `plant ${add} to start` : `plant ${add} more`;
+  if (n > 0 && prev && n > prev) return `${grow} · or remove ${n - prev} for a garden of ${sizeWord(prev)}`;
+  return grow;
 }
 function layoutNums() {
   const wrap = document.querySelector('.gridwrap'), nl = $('numlayer'); if (!wrap || !nl) return;
@@ -66,7 +76,7 @@ export function renderAll() { renderMethods(); renderGrid(); }
 
 $('amount').addEventListener('input', renderGrid);
 
-/* share the current nine as a ?to= link — emits the nicest identifier per creator
+/* share the current garden as a ?to= link — emits the nicest identifier per creator
    (campaign slug > .tez name > wallet), in the arranged order, so the link round-trips
    through the same prefill parser main.js already uses. */
 const SHARE_LABEL = 'copy link';
