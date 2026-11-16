@@ -1,7 +1,7 @@
 import { $ } from './dom.js';
 import { avatarSVG } from './avatar.js';
 import { escapeHTML } from './escape.js';
-import { creators, method, yoloLevel, METHODS, setMethod, setYoloLevel, rollYolo, full, computeSplit, displayOrder, gardenSize, gardenCols, sizeWord, prevSize, isWhale, MAX } from './state.js';
+import { creators, method, yoloLevel, METHODS, setMethod, setYoloLevel, rollYolo, full, computeSplit, displayOrder, gardenSize, gardenCols, sizeWord, prevSize, isWhale, MAX, clearCreators } from './state.js';
 
 const DICE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.4" fill="currentColor" stroke="none"/></svg>';
 function renderMethods() {
@@ -64,6 +64,8 @@ export function renderGrid() {
   $('sprinkleBtn').disabled = !on;
   $('shareListBtn').disabled = n === 0;
   $('saveListBtn').disabled = n === 0;
+  if (n === 0) disarmClear();
+  $('clearBtn').hidden = n === 0;
   $('splitfoot').textContent = on ? readyLine(pot, n, size, split) : fillHint(n, size);
   layoutNums();
   window.dispatchEvent(new Event('sprinkler:change'));   // draft autosave listens for this
@@ -122,6 +124,25 @@ async function copyShareLink() {
   clearTimeout(btn._t); btn._t = setTimeout(() => { btn.textContent = SHARE_LABEL; btn.classList.remove('copied'); }, 1800);
 }
 $('shareListBtn').addEventListener('click', copyShareLink);
+
+/* clear all — two presses, like deleting a saved list; the draft autosave picks up the
+   empty garden, so a saved list is the way back */
+let clearTimer;
+function disarmClear() {
+  const b = $('clearBtn'); clearTimeout(clearTimer);
+  delete b.dataset.armed; b.textContent = 'clear'; b.classList.remove('armed');
+}
+$('clearBtn').addEventListener('click', () => {
+  const b = $('clearBtn');
+  if (!b.dataset.armed) {
+    b.dataset.armed = '1'; b.textContent = 'clear all?'; b.classList.add('armed');
+    clearTimeout(clearTimer); clearTimer = setTimeout(disarmClear, 2200);
+    return;
+  }
+  disarmClear();
+  if ($('saveName').style.display !== 'none') $('saveNameCancel').click();   // nothing left to name
+  clearCreators(); renderAll();
+});
 
 /* Photos-style Drag and Drop */
 (function () {

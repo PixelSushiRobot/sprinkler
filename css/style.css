@@ -204,6 +204,25 @@
       letter-spacing: .1em
     }
 
+    /* clear the whole garden — rides the header after the count, divided by a rule;
+       first press arms ("clear all?"), second clears, same pattern as .rdel */
+    .hclear {
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--line);
+      font: inherit;
+      text-transform: inherit;
+      letter-spacing: .1em;
+      color: var(--dim);
+      padding: 0 0 0 var(--sp-2);
+      cursor: pointer
+    }
+
+    .hclear:hover,
+    .hclear.armed {
+      color: var(--ink)
+    }
+
     .phead .step {
       color: var(--accent);
       font-weight: 600;
@@ -234,6 +253,7 @@
     .rfill,
     .rlink,
     .rdel,
+    .hclear,
     .txlink,
     .sbtn {
       transition-property: color, background-color, border-color, opacity;
