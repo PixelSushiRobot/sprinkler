@@ -889,6 +889,119 @@
       color: var(--line)
     }
 
+    /* whale mode (13+): the garden becomes a compact list that scrolls inside a fixed
+       height (~12 rows) so the sprinkle button stays in reach. Row styles key off .wrow,
+       not the container, so a row keeps its shape while lifted out for a drag. */
+    .gridwrap.list {
+      max-height: 520px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      border-top: 1px solid var(--divider);
+      border-bottom: 1px solid var(--divider)
+    }
+
+    .grid.list {
+      gap: var(--sp-1)
+    }
+
+    .tile.wrow {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--sp-3);
+      min-height: 0;
+      padding: var(--sp-2) var(--sp-3);
+      cursor: default;
+      touch-action: auto
+    }
+
+    .tile.wrow .tilefill {
+      top: 0;
+      right: auto;
+      height: auto;
+      width: 0;
+      transition: width var(--t-reveal) var(--ease)
+    }
+
+    .tile.wrow .av {
+      width: 28px;
+      height: 28px;
+      flex: none
+    }
+
+    .tile.wrow .rank {
+      position: relative;
+      z-index: 1;
+      flex: none;
+      min-width: 2ch;
+      text-align: right;
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      color: var(--dim)
+    }
+
+    html.ranking .tile.wrow .rank {
+      color: var(--accent)
+    }
+
+    .tile.wrow .info {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      min-width: 0
+    }
+
+    .tile.wrow .nm {
+      text-align: left
+    }
+
+    .tile.wrow .num {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      line-height: var(--lh-snug)
+    }
+
+    .tile.wrow .num .pc {
+      font-size: var(--fs-2xs);
+      color: var(--dim)
+    }
+
+    .tile.wrow .crown {
+      position: relative;
+      top: auto;
+      left: auto;
+      flex: none
+    }
+
+    .tile.wrow .x {
+      position: relative;
+      top: auto;
+      right: auto;
+      flex: none
+    }
+
+    /* drag handle — the only drag start in the list; ↑ / ↓ also moves the row */
+    .grip {
+      position: relative;
+      z-index: 1;
+      flex: none;
+      width: 20px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--dim);
+      font-size: var(--fs-md);
+      line-height: 1;
+      cursor: grab;
+      touch-action: none
+    }
+
+    .grip:hover {
+      color: var(--ink)
+    }
+
     .splitfoot {
       margin-top: var(--sp-4);
       font-size: var(--fs-xs);
@@ -1045,7 +1158,15 @@
 
     .ov-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: collapse
+    }
+
+    /* recipient table scrolls on its own so a whale-sized batch doesn't push the
+       sprinkle button off the dialog; the summary rows above stay put */
+    .ov-scroll {
+      max-height: 40vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
       margin-bottom: var(--sp-4)
     }
 
@@ -1253,7 +1374,7 @@
     }
 
     @media (max-width:560px) {
-      .grid {
+      .grid:not(.list) {
         grid-template-columns: repeat(2, minmax(0, 1fr))
       }
 

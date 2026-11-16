@@ -1,6 +1,6 @@
 import { $ } from './dom.js';
 import { drawAvatar } from './avatar.js';
-import { creators, full, displayOrder, lastHash, gardenSize, gardenCols } from './state.js';
+import { creators, full, displayOrder, lastHash, gardenSize, gardenCols, isWhale } from './state.js';
 
 /* load an avatar for canvas use — crossOrigin so a clean load stays exportable. Some
    hosts (incl. a few TTCrowd campaign logos) send no CORS headers, which fails the
@@ -34,15 +34,36 @@ function drawGarden(order, imgs) {
   ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.font = '600 58px "SF Mono", Menlo, monospace'; ctx.fillText('MY GARDEN', 66, 106);
   ctx.font = '22px "SF Mono", Menlo, monospace'; ctx.fillStyle = sub; ctx.fillText('WATERED WITH ' + (Math.max(0, +$('amount').value || 0)) + ' XTZ', 68, 144);
   if (!full()) return;
+  if (isWhale()) drawWhale(ctx, S, order, imgs, ink, sub, line);
+  else drawGrid(ctx, S, order, imgs, ink);
+  ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(66, 996); ctx.lineTo(S - 66, 996); ctx.stroke();
+  ctx.fillStyle = sub; ctx.font = '18px "SF Mono", Menlo, monospace'; ctx.textAlign = 'left'; ctx.fillText('TX ' + (lastHash ? lastHash.slice(0, 12) + '…' + lastHash.slice(-6) : '—'), 66, 1032); ctx.textAlign = 'right'; ctx.fillText('MADE WITH SPRINKLER', S - 66, 1032); ctx.textAlign = 'left';
+}
+function drawGrid(ctx, S, order, imgs, ink) {
   const size = gardenSize(), cols = gardenCols(size), rows = Math.ceil(size / cols), L = CARD[size] || CARD[9];
   const av = L.av, colGap = L.gap, rowStride = av + NAME_ROW;
   const startX = (S - (av * cols + colGap * (cols - 1))) / 2, startY = 190 + Math.max(0, (BAND - rows * rowStride) / 2);
   order.forEach((origIdx, i) => { const c = creators[origIdx]; const col = i % cols, row = Math.floor(i / cols), x = startX + col * (av + colGap), y = startY + row * rowStride; const img = imgs && imgs[i]; if (!(img && drawImgCover(ctx, img, x, y, av))) drawAvatar(ctx, c.id, x, y, av); ctx.fillStyle = ink; ctx.font = '600 22px "SF Mono", Menlo, monospace'; ctx.textAlign = 'center'; let nm = c.name; if (nm.length > L.chars) nm = nm.slice(0, L.chars - 1) + '…'; ctx.fillText(nm, x + av / 2, y + av + 30); });
-  ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(66, 996); ctx.lineTo(S - 66, 996); ctx.stroke();
-  ctx.fillStyle = sub; ctx.font = '18px "SF Mono", Menlo, monospace'; ctx.textAlign = 'left'; ctx.fillText('TX ' + (lastHash ? lastHash.slice(0, 12) + '…' + lastHash.slice(-6) : '—'), 66, 1032); ctx.textAlign = 'right'; ctx.fillText('MADE WITH SPRINKLER', S - 66, 1032); ctx.textAlign = 'left';
+}
+/* whale card: too many people for a grid of faces, so the head count is the hero —
+   a big number, then a strip of the first STRIP avatars and a "+N" tile for the rest */
+const STRIP = 8;
+function drawWhale(ctx, S, order, imgs, ink, sub, line) {
+  const n = order.length;
+  ctx.textAlign = 'center'; ctx.fillStyle = ink;
+  ctx.font = '600 260px "SF Mono", Menlo, monospace'; ctx.fillText(String(n), S / 2, 560);
+  ctx.fillStyle = sub; ctx.font = '600 34px "SF Mono", Menlo, monospace'; ctx.fillText('C R E A T O R S', S / 2, 630);
+  const av = 88, gap = 14, slots = STRIP + 1, startX = (S - (av * slots + gap * (slots - 1))) / 2, y = 740;
+  order.slice(0, STRIP).forEach((origIdx, i) => { const x = startX + i * (av + gap); const img = imgs && imgs[i]; if (!(img && drawImgCover(ctx, img, x, y, av))) drawAvatar(ctx, creators[origIdx].id, x, y, av); });
+  const rx = startX + STRIP * (av + gap);
+  ctx.strokeStyle = line; ctx.lineWidth = 2; ctx.strokeRect(rx + 1, y + 1, av - 2, av - 2);
+  ctx.fillStyle = ink; ctx.font = '600 26px "SF Mono", Menlo, monospace'; ctx.fillText('+' + (n - STRIP), rx + av / 2, y + av / 2 + 9);
+  ctx.textAlign = 'left';
 }
 export function renderGarden() {
   const order = displayOrder();
   drawGarden(order, null);                                                    // instant identicons
-  if (full()) Promise.all(order.map(oi => loadImg(creators[oi].avatar))).then(imgs => drawGarden(order, imgs)); // upgrade to real avatars
+  // upgrade to real avatars — only the ones the card actually shows
+  const shown = isWhale() ? order.slice(0, STRIP) : order;
+  if (full()) Promise.all(shown.map(oi => loadImg(creators[oi].avatar))).then(imgs => drawGarden(order, imgs));
 }

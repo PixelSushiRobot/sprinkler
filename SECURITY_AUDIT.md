@@ -283,9 +283,25 @@ documented residual-trust note.
   (`holder(where:{address:{_in:$a}})`), never string-interpolated — consistent
   with the GraphQL-injection ruling under "Checked and ruled out."
 - **Share link / clipboard** (`js/grid.js`). Builds a `?to=` URL from the
-  already-validated nine and copies it via `navigator.clipboard.writeText` (with a
+  already-validated garden and copies it via `navigator.clipboard.writeText` (with a
   hidden-`<textarea>` `execCommand` fallback). No external call, no untrusted input,
   output is our own URL.
+- **Garden sizes + whale mode** (`js/state.js`). A batch is now 4, 9 or 12
+  recipients, or 13–100 in whale mode, still as **one** operation the wallet forges
+  and signs — no splitting into multiple operations. A bigger batch raises the
+  stakes of a single swapped address in a pasted or loaded list, so the confirm
+  dialog (`js/overlay.js` `confirmWarnings`) flags every recipient that never
+  resolved to any name ("double-check those addresses"), and warns when a share is
+  under 0.1 XTZ. Both are advisory; recipients are still all shown for review before
+  signing. Resolution of a large list is throttled to 6 creators in parallel
+  (`js/api.js` `enrichSlot`) so a 100-address paste doesn't burst the public APIs.
+- **Saved lists + draft in localStorage** (`js/store.js`, `js/lists.js`,
+  `js/draft.js`). Stored entries hold recipient tokens, addresses, names and avatar
+  URLs this app wrote. On load, tokens replay through the same `addMany` validation
+  path as a paste or `?to=` link (checksum, dedupe, size cap, live re-resolution), so
+  stored names/addresses are never trusted for payout. List names and cached
+  avatars render escaped, and a cached avatar only renders if it's an `https:` or
+  `data:image/` URL. Nothing is sent anywhere; clearing site data clears it.
 
 ### Stakes note: Mainnet is now the default
 

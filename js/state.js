@@ -29,13 +29,16 @@ export function clearCreators() { creators.length = 0; }
 
 /* garden size follows the head count — always the smallest garden that fits, so it
    grows as you add (2×2 → 3×3 → 4×3) and shrinks back as you remove. A garden has to
-   be complete to sprinkle, which keeps the card a full grid every time. */
+   be complete to sprinkle, which keeps the card a full grid every time. Past twelve
+   it's whale mode: a list of any size up to MAX, ready at whatever count you have. */
 export const SIZES = [4, 9, 12];
-export const MAX = SIZES[SIZES.length - 1];
+export const MAX = 100;
+const GRID_MAX = SIZES[SIZES.length - 1];
 const COLS = { 4: 2, 9: 3, 12: 4 };
 const WORDS = { 4: 'four', 9: 'nine', 12: 'twelve' };
-export function gardenSize(n = creators.length) { return SIZES.find(s => s >= n) || MAX; }
-export function gardenCols(size = gardenSize()) { return COLS[size] || 3; }
+export function isWhale(n = creators.length) { return n > GRID_MAX; }
+export function gardenSize(n = creators.length) { return SIZES.find(s => s >= n) || n; }
+export function gardenCols(size = gardenSize()) { return COLS[size] || 1; }
 export function sizeWord(size = gardenSize()) { return WORDS[size] || String(size); }
 // the next garden down — what you'd shrink to by removing people (null at the smallest)
 export function prevSize(size = gardenSize()) { const i = SIZES.indexOf(size); return i > 0 ? SIZES[i - 1] : null; }
@@ -72,7 +75,11 @@ export function rollYolo() {
 }
 
 /* split math */
-function rawWeights() { switch (method) { case 'equal': return creators.map(() => 1); case 'boss': return creators.map((c, i) => Math.pow(0.78, i)); case 'tree': return creators.map(c => 0.12 + c.activity / 100); case 'ants': return creators.map(c => 0.12 + (1 - c.received / 100)); case 'yolo': { const P = yoloLevel === 'chill' ? 1.5 : yoloLevel === 'jackpot' ? 6 : 3.5; return creators.map(c => Math.pow(c._yolo, P) + 0.001); } } }
+// I Am The Boss: each rank gets `bossDecay` of the one above. 0.78 up to twelve; past
+// that the decay softens so last place still gets the same fraction of first place
+// (0.78^11 ≈ 6.5%) instead of the tail flattening to the floor
+function bossDecay(n) { return n <= GRID_MAX ? 0.78 : Math.pow(Math.pow(0.78, GRID_MAX - 1), 1 / (n - 1)); }
+function rawWeights() { switch (method) { case 'equal': return creators.map(() => 1); case 'boss': { const d = bossDecay(creators.length); return creators.map((c, i) => Math.pow(d, i)); } case 'tree': return creators.map(c => 0.12 + c.activity / 100); case 'ants': return creators.map(c => 0.12 + (1 - c.received / 100)); case 'yolo': { const P = yoloLevel === 'chill' ? 1.5 : yoloLevel === 'jackpot' ? 6 : 3.5; return creators.map(c => Math.pow(c._yolo, P) + 0.001); } } }
 function effFloor() { return (method === 'yolo' && yoloLevel === 'jackpot') ? 2.5 : 5; }
 export function computeSplit() {
   const n = creators.length; if (n === 0) return [];

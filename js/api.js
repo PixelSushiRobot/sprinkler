@@ -38,8 +38,25 @@ function flushProfiles() {
   });
 }
 
+/* a whale-sized paste resolves up to 100 creators at once — each one is a few TzKT
+   calls, so cap how many resolve in parallel (the public APIs rate-limit bursts), and
+   coalesce the re-render each one triggers into one per frame */
+const ENRICH_PARALLEL = 6;
+let enrichInflight = 0; const enrichWaiting = [];
+function enrichSlot() { if (enrichInflight < ENRICH_PARALLEL) { enrichInflight++; return Promise.resolve(); } return new Promise(r => enrichWaiting.push(r)); }
+function enrichDone() { const next = enrichWaiting.shift(); if (next) next(); else enrichInflight--; }
+let renderQueued = false;
+function renderSoon() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; renderAll(); syncConfirmReady(); }); }
+
 /* resolve address / .tez name, pull activity + balance, real avatar */
 export async function enrichCreator(c) {
+  await enrichSlot();
+  try { await enrichOne(c); } finally { enrichDone(); }
+  renderSoon();
+}
+async function enrichOne(c) {
+  // removed while it waited for a slot — nothing to resolve
+  if (!creators.includes(c)) return;
   try {
     if (!c.addr) {
       const d = await fetchJSON(`${TZKT}/v1/domains?name=${encodeURIComponent(c._input.toLowerCase())}`);
@@ -56,13 +73,13 @@ export async function enrichCreator(c) {
     // reviewed the whole batch
     if (!(await isValidTezosAddress(c.addr))) {
       c._err = 'invalid address'; c._loading = false;
-      renderAll(); syncConfirmReady(); return;
+      return;
     }
     // reject a second entry that resolves to an address already in the list
     // (e.g. someone added once as alice.tez and once as her tz1… address)
     if (creators.some(x => x !== c && x.addr && x.addr === c.addr)) {
       c._err = 'duplicate'; c._loading = false;
-      renderAll(); syncConfirmReady(); return;
+      return;
     }
     const acc = await fetchJSON(`${TZKT}/v1/accounts/${c.addr}`);
     const tx = (acc && acc.numTransactions) || 0;
@@ -100,7 +117,6 @@ export async function enrichCreator(c) {
   } catch (e) {
     c._loading = false; c._err = 'not found';
   }
-  renderAll(); syncConfirmReady();
 }
 
 /* best-effort objkt profile (mainnet catalog): clean alias + avatar in one hit —

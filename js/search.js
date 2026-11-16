@@ -223,7 +223,7 @@ async function loadList(id) {
 
 function addFound(addr, name, logo) {
   errNote('');
-  if (atCap()) { errShow("that's twelve — the garden's full"); return; }
+  if (atCap()) { errShow("that's 100 — the whole whale"); return; }
   const c = makeCreator(addr); if (!c) return;
   if (name) { c.name = name; c._named = true; }
   if (logo) c.avatar = ipfsURL(logo);
@@ -255,7 +255,7 @@ async function addCampaign(slug, name, logo, addr, closed) {
   const m = { slug, name, logo: logo || null, address: addr || null, closed: !!closed };
   if (!m.address) { let info = null; try { info = await ttcrowdResolve(slug); } catch (e) { } if (info) { m.address = info.address; m.closed = m.closed || info.closed; m.logo = m.logo || info.avatar; } }
   const st = tryAddCampaign(m);
-  const msg = { over: "that's twelve — the garden's full", noaddr: "couldn't load that campaign", closed: "that campaign isn't taking donations right now", invalid: 'that campaign wallet looks invalid', dup: 'already in your garden' };
+  const msg = { over: "that's 100 — the whole whale", noaddr: "couldn't load that campaign", closed: "that campaign isn't taking donations right now", invalid: 'that campaign wallet looks invalid', dup: 'already in your garden' };
   if (st !== 'added') { errShow(msg[st] || ''); return; }
   renderAll();
 }
@@ -271,10 +271,10 @@ async function fillCampaigns() {
   if (dup) bits.push(`${dup} already in`);
   if (closed) bits.push(`${closed} not taking donations`);
   if (!bits.length) bits.push('no active campaigns to add');
-  else if (atCap()) bits.push('garden full');
+  else if (atCap()) bits.push('the whole whale');
   errNote(bits.join(' · '));
 }
-function addCreator(v) { errNote(''); if (atCap()) { errShow("that's twelve — the garden's full"); return; } const c = makeCreator(v); if (!c) { errShow("not a tz address or a .tez name"); return; } if (creators.some(x => x.id === c.id)) { errShow('already in your garden'); return; } creators.push(c); renderAll(); enrichCreator(c); }
+function addCreator(v) { errNote(''); if (atCap()) { errShow("that's 100 — the whole whale"); return; } const c = makeCreator(v); if (!c) { errShow("not a tz address or a .tez name"); return; } if (creators.some(x => x.id === c.id)) { errShow('already in your garden'); return; } creators.push(c); renderAll(); enrichCreator(c); }
 /* a bare TTCrowd slug — no dots or spaces (those are .tez names or junk) */
 function isSlug(t) { return /^[a-z0-9][a-z0-9-]{1,60}$/i.test(t); }
 /* paste a whole list at once — newline / comma / space / semicolon separated. Also the

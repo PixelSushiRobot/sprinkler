@@ -85,10 +85,26 @@ function openOverlay() {
   $('confirmTable').innerHTML = rows;
   // JS avatar fallback (CSP blocks inline onerror); imgs render in idx order
   [...$('confirmTable').querySelectorAll('img.av')].forEach((img, k) => { const c = creators[idx[k]]; img.onerror = () => { img.onerror = null; img.src = avatarSVG(c.id); }; });
+  $('confirmTable').parentElement.scrollTop = 0;
+  confirmWarnings(pot, split);
   $('confirmPane').style.display = ''; $('successPane').style.display = 'none';
   $('overlay').classList.add('show');
   // move focus into the dialog — the primary action if it's live, else the first control
   setTimeout(() => { const f = focusables(); const pref = f.find(el => el.id === 'connectBtn') || f.find(el => el.id === 'confirmBtn' && !el.disabled) || f[0]; if (pref) pref.focus(); }, 0);
+}
+
+/* advisory notes under the recipient table. Neither blocks sending:
+   - an address that never resolved to any name is the one most worth eyeballing,
+     especially in a big pasted list (a swapped address looks exactly like this)
+   - a big list over a small pot can leave shares too small to be worth the fee */
+function confirmWarnings(pot, split) {
+  const el = $('confirmWarn'), bits = [];
+  const unnamed = creators.filter(c => c.addr && c.name === shortAddr(c.addr)).length;
+  if (unnamed) bits.push(`[!] ${unnamed} ${unnamed === 1 ? 'recipient has' : 'recipients have'} no name — double-check ${unnamed === 1 ? 'that address' : 'those addresses'}.`);
+  const least = pot * Math.min(...split) / 100;
+  if (pot > 0 && least < 0.1) bits.push(`[!] smallest share is ${least.toFixed(2)} XTZ.`);
+  el.textContent = bits.join(' ');
+  el.style.display = bits.length ? '' : 'none';
 }
 
 /* split the pot into exact-summing mutez amounts (no dust, no rounding drift) */
