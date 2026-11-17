@@ -5,12 +5,24 @@ import { creators, full, computeSplit, setLastHash, countWord } from './state.js
 import { renderGarden } from './garden.js';
 import { escapeHTML } from './escape.js';
 import { wireSave } from './lists.js';
+import { shareURL, copyShareLink } from './grid.js';
 import * as wallet from './wallet.js';
 
 /* overlay flow */
 // share text carries the real head count; set once per sprinkle, read by every share button
 let shareText = '';
 const shareTextFor = n => n + (n === 1 ? ' creator' : ' creators') + '. 1 pot. zero spreadsheets. 🌱';
+/* each post = tagline + the garden link, so whoever sees it can open the same garden.
+   X counts any link as 23 chars, so it always gets the garden link; Bluesky (300 chars)
+   and Farcaster (320 bytes) count the whole URL, so a long raw-wallet list falls back
+   to the homepage there */
+const HOME = 'sprinkler.psr.fyi';
+function postText(platform) {
+  const full = shareText + '\n' + shareURL(), home = shareText + '\n' + HOME;
+  if (platform === 'bs') return [...full].length <= 300 ? full : home;
+  if (platform === 'fc') return new TextEncoder().encode(full).length <= 320 ? full : home;
+  return full;
+}
 function renderNetLabel() {
   const n = payNet(), el = document.getElementById('netLabel');
   if (el) el.textContent = n.testnet ? 'try it: real search · test payouts on ' + n.networkName : 'live on Tezos mainnet';
@@ -137,13 +149,13 @@ async function doSprinkle() {
   shareText = shareTextFor(creators.length);
   $('successLead').textContent = pot + ' XTZ, sprinkled across ' + countWord() + (creators.length === 1 ? ' creator.' : ' creators.');
   $('txLink').href = payNet().explorer + '/' + hash;
-  $('shareText').textContent = shareText;
   $('confirmPane').style.display = 'none'; $('successPane').style.display = '';
   saveAfter.reset();
+  setCardHint();
   renderGarden();
-  const t = encodeURIComponent(shareText);
-  $('shareFc').href = 'https://farcaster.xyz/~/compose?text=' + t;
-  $('shareBs').href = 'https://bsky.app/intent/compose?text=' + t;
+  $('shareX').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(postText('x'));
+  $('shareFc').href = 'https://farcaster.xyz/~/compose?text=' + encodeURIComponent(postText('fc'));
+  $('shareBs').href = 'https://bsky.app/intent/compose?text=' + encodeURIComponent(postText('bs'));
 }
 function closeOverlay() { $('overlay').classList.remove('show'); const b = $('sprinkleBtn'); if (b) b.focus(); }
 /* focus trap helpers — only visible, enabled controls inside the dialog count
@@ -151,9 +163,10 @@ function closeOverlay() { $('overlay').classList.remove('show'); const b = $('sp
 function focusables() { return [...$('overlay').querySelectorAll('button,a[href],input,[tabindex]:not([tabindex="-1"])')].filter(el => el.offsetParent !== null && !el.disabled); }
 $('sprinkleBtn').onclick = openOverlay;
 $('confirmBtn').onclick = doSprinkle;
-// "save this garden as a list" on the success screen — right after sending is when a
-// list is most worth keeping. Same inline name field as the one under "sprinkle it".
-const saveAfter = wireSave({ btn: $('saveAfterBtn'), hide: $('saveAfterBtn'), pane: $('saveAfter'), input: $('saveAfterName'), ok: $('saveAfterOk'), cancel: $('saveAfterCancel') });
+// list actions live in the success footer: "save as list" swaps the footer for the name
+// field; "copy list link" copies the same ?to= link as the one under "sprinkle it"
+const saveAfter = wireSave({ btn: $('saveAfterBtn'), hide: $('shareFoot'), pane: $('saveAfter'), input: $('saveAfterName'), ok: $('saveAfterOk'), cancel: $('saveAfterCancel') });
+$('copyListAfter').addEventListener('click', () => copyShareLink($('copyListAfter'), 'copy list link'));
 wallet.walletReady().then(async ok => { try { if (ok) { walletAddr = await wallet.getActive(); syncConfirmReady(); } } catch (e) { } });
 window.addEventListener('tez-account', e => { walletAddr = e.detail || null; syncConfirmReady(); });
 $('ovClose').onclick = closeOverlay;
@@ -181,20 +194,57 @@ $('overlay').addEventListener('keydown', e => {
   if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 });
-$('shareX').onclick = () => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText), '_blank');
-$('copyBtn').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(shareText); $('copyBtn').textContent = 'copied ✓'; setTimeout(() => $('copyBtn').textContent = 'Copy text', 1400); };
 $('dlBtn').onclick = () => { try { const a = document.createElement('a'); a.download = 'my-garden.png'; a.href = $('gardenCanvas').toDataURL('image/png'); a.click(); } catch (e) { console.error('[sprinkler] card export failed (tainted canvas?):', e); $('sprinkleErr').textContent = "couldn't export the card — try again"; } };
-/* native share sheet WITH the card image — the only way to actually attach the PNG,
-   since the X/Farcaster/Bluesky intent links carry text only. Feature-detected: the
-   button stays hidden where the browser can't share files (most desktop, Firefox). */
-async function shareCard() {
-  let file;
-  try { const blob = await new Promise(r => $('gardenCanvas').toBlob(r, 'image/png')); if (!blob) throw 0; file = new File([blob], 'my-garden.png', { type: 'image/png' }); }
-  catch (e) { $('sprinkleErr').textContent = "couldn't build the card image"; return; }
-  if (!(navigator.canShare && navigator.canShare({ files: [file] }))) { $('sprinkleErr').textContent = 'image sharing isn’t supported here — use ↓ Card'; return; }
-  try { await navigator.share({ files: [file], text: shareText }); } catch (e) { /* user dismissed the sheet */ }
+
+/* two separate abilities, checked separately:
+   - shareFiles: the system share sheet can take the PNG (mostly phones) → "Share card"
+   - copyImage: the clipboard can take a PNG (desktop browsers) → the social buttons copy
+     the card as they open the post, and the caption under the card says so.
+   Phones post the image through the share sheet (pasting there is clumsy), so where
+   both exist, Share card wins and nothing is copied automatically. */
+const CAN = {
+  shareFiles: (() => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'])], 'x.png', { type: 'image/png' })] })); } catch (e) { return false; } })(),
+  copyImage: !!(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem),
+};
+const autoCopy = CAN.copyImage && !CAN.shareFiles;
+
+/* the card's PNG, snapshotted every time the card is drawn — Safari only allows the
+   clipboard write if it starts inside the click, so the image has to be ready (or at
+   least promised) before the click, not built after it */
+let cardBlob = null, cardBlobP = null;
+window.addEventListener('sprinkler:card', () => {
+  cardBlob = null;
+  cardBlobP = new Promise(res => { try { $('gardenCanvas').toBlob(b => { cardBlob = b; res(b); }, 'image/png'); } catch (e) { res(null); } });
+});
+
+const HINT = 'Sharing copies this card. Paste it into your post.';
+const PASTE = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘V' : 'Ctrl+V';
+function setCardHint(state) {
+  const h = $('cardHint'); clearTimeout(h._t); h.className = 'cardcap';
+  if (!state) { h.textContent = autoCopy ? HINT : ''; return; }
+  h.classList.add(state);
+  h.textContent = state === 'ok' ? `Card copied. Paste it into your post (${PASTE}).` : "Couldn't copy the card. Download it instead.";
+  h._t = setTimeout(() => setCardHint(), 8000);
 }
-try {
-  const probe = new File([new Blob(['x'])], 'x.png', { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [probe] })) { const b = $('shareImg'); if (b) { b.style.display = ''; b.onclick = shareCard; } }
-} catch (e) { /* no file-share support — leave the button hidden */ }
+/* started synchronously in the click; the post opens through the link's own target=_blank
+   navigation in that same click and never waits on this. Only says "copied" once the
+   write has actually resolved (the user mostly sees it on coming back to the tab). */
+function copyCardForPost() {
+  if (!autoCopy) return;
+  try {
+    const item = new ClipboardItem({ 'image/png': cardBlob || cardBlobP.then(b => b || Promise.reject(new Error('no card image'))) });
+    navigator.clipboard.write([item]).then(() => setCardHint('ok'), e => { console.warn('[sprinkler] card copy failed:', e); setCardHint('bad'); });
+  } catch (e) { console.warn('[sprinkler] card copy failed:', e); setCardHint('bad'); }
+}
+['shareX', 'shareFc', 'shareBs'].forEach(id => $(id).addEventListener('click', copyCardForPost));
+
+/* native share sheet WITH the card image — where it exists, the one-tap way to post the
+   actual PNG. Hidden where the browser can't share files. */
+async function shareCard() {
+  const blob = cardBlob || (cardBlobP && await cardBlobP);
+  if (!blob) { $('sprinkleErr').textContent = "couldn't build the card image"; return; }
+  const file = new File([blob], 'my-garden.png', { type: 'image/png' });
+  if (!(navigator.canShare && navigator.canShare({ files: [file] }))) { $('sprinkleErr').textContent = 'image sharing isn’t supported here — use ↓ Download card'; return; }
+  try { await navigator.share({ files: [file], text: postText('x') }); } catch (e) { /* user dismissed the sheet */ }
+}
+if (CAN.shareFiles) { $('shareImg').hidden = false; $('shareImg').onclick = shareCard; }

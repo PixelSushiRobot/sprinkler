@@ -49,8 +49,14 @@ review of this codebase (now fully remediated).
 4. **Sprinkle.** Connect a Tezos wallet and sign one batched payout — every
    transfer in a single operation, amounts computed in exact mutez so the
    shares sum precisely to the pot.
-5. **Share.** A generated "garden" card with everyone's avatar, plus a link to
-   the transaction and share buttons (X, Farcaster, Bluesky).
+5. **Share.** A generated "garden" card with everyone's avatar, a link to the
+   transaction, and share buttons for X, Farcaster and Bluesky. Each post carries the
+   garden's `?to=` link (or just the homepage on Bluesky / Farcaster when a long
+   list won't fit their length limits). Where the browser can copy images
+   (desktop), sharing also copies the card so it can be pasted into the post; where
+   it can share files (phones), **Share card** opens the system share sheet with the
+   image. **Download card** works everywhere, and the footer has **copy list link**
+   and **save as list**. Link previews use a static `og-image.png`.
 
 ## The five ways to split
 
@@ -174,7 +180,7 @@ is gone; Shadownet replaces it.
 
 ## Deploy
 
-Copy the whole repo (`index.html`, `css/`, `js/`, and the icon files) to any
+Copy the whole repo (`index.html`, `css/`, `js/`, the icon files and `og-image.png`) to any
 static host — it's served as-is, no build step. Note that wallet connect and
 the live API calls only work from a real host, not a sandboxed preview (CSP
 blocks the CDN import and external

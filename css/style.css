@@ -236,6 +236,15 @@
       margin: 0 0 var(--sp-4)
     }
 
+    /* descriptions and hints: avoid one-word last lines (ignored where unsupported) */
+    .sub,
+    .slead,
+    .splitfoot,
+    .err,
+    .note {
+      text-wrap: pretty
+    }
+
     button {
       font-family: inherit;
       cursor: pointer
@@ -255,6 +264,7 @@
     .rdel,
     .hclear,
     .txlink,
+    .flink,
     .sbtn {
       transition-property: color, background-color, border-color, opacity;
       transition-duration: var(--t-state);
@@ -1309,6 +1319,31 @@
       margin-bottom: var(--sp-4)
     }
 
+    /* caption under the card: says sharing copies the image (only where the browser can
+       copy one), then confirms or reports the copy. Empty → gone, card keeps its margin */
+    .cardcap {
+      margin: calc(var(--sp-2) - var(--sp-4)) 0 var(--sp-4);
+      font-size: var(--fs-2xs);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--dim);
+      line-height: var(--lh-normal);
+      text-wrap: pretty
+    }
+
+    .cardcap:empty {
+      display: none
+    }
+
+    .cardcap.ok,
+    .cardcap.bad {
+      color: var(--ink)
+    }
+
+    .cardcap.bad::before {
+      content: "[!] "
+    }
+
     .success-head {
       font-size: var(--fs-lg);
       font-weight: 600;
@@ -1321,40 +1356,42 @@
       font-size: var(--fs-sm);
       color: var(--muted);
       margin: 0;
-      line-height: var(--lh-normal)
-    }
-
-    .share-label {
-      font-size: var(--fs-2xs);
-      text-transform: uppercase;
-      letter-spacing: .16em;
-      color: var(--muted);
-      margin: var(--sp-4) 0 var(--sp-2);
-      text-align: left
-    }
-
-    .share-box {
-      background: var(--inset);
-      border: 1px solid var(--line);
-      padding: var(--sp-3) var(--sp-3);
-      font-size: var(--fs-xs);
-      color: var(--muted);
       line-height: var(--lh-normal);
-      margin-bottom: var(--sp-3);
-      text-align: left
+      text-wrap: pretty
+    }
+
+    /* share: X as the primary, then social and card rows of equal-height secondaries */
+    .share-main {
+      margin-top: var(--sp-5)
+    }
+
+    .share-main > .btn {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer
     }
 
     .share-row {
       display: flex;
       gap: var(--sp-2);
-      margin-top: var(--sp-3);
+      margin-top: var(--sp-2);
       flex-wrap: wrap
     }
 
+    /* <a> and <button> secondaries box to one height: one line of --fs-xs + padding + border */
     .sbtn {
       flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      min-height: calc(var(--fs-xs) * var(--lh-tight) + var(--sp-2) * 2 + 2px);
       font-family: inherit;
       font-size: var(--fs-xs);
+      line-height: var(--lh-tight);
       text-transform: uppercase;
       letter-spacing: .06em;
       padding: var(--sp-2) var(--sp-3);
@@ -1369,6 +1406,46 @@
 
     .sbtn:hover {
       border-color: var(--accent)
+    }
+
+    /* list actions: a quiet footer of text links under a divider; the name field swaps in */
+    .share-foot,
+    .share-foot-pane {
+      margin-top: var(--sp-5);
+      padding-top: var(--sp-4);
+      border-top: 1px solid var(--divider)
+    }
+
+    .share-foot {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      gap: var(--sp-3);
+      font-size: var(--fs-xs);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--dim)
+    }
+
+    .share-foot-pane .savename {
+      flex: 1;
+      margin-top: 0
+    }
+
+    .flink {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      color: var(--muted);
+      cursor: pointer
+    }
+
+    .flink:hover,
+    .flink.copied {
+      color: var(--ink)
     }
 
     .foot {

@@ -99,12 +99,15 @@ export function shareToken(c) {
   if (c._input && /\.tez$/i.test(c._input)) return c._input;
   return c.addr;
 }
-function shareURL() {
+// commas stay literal (valid in a query, and the paste path splits on them) so the link
+// stays short enough to fit in a social post
+export function shareURL() {
   const toks = displayOrder().map(i => shareToken(creators[i])).filter(Boolean);
-  return location.origin + location.pathname + '?to=' + encodeURIComponent(toks.join(','));
+  return location.origin + location.pathname + '?to=' + toks.map(encodeURIComponent).join(',');
 }
-async function copyShareLink() {
-  const btn = $('shareListBtn'); if (btn.disabled) return;
+// copies the garden link; `btn` shows the result, then goes back to `label`
+export async function copyShareLink(btn = $('shareListBtn'), label = SHARE_LABEL) {
+  if (btn.disabled || !creators.length) return;
   const url = shareURL();
   let ok = true;
   try { await navigator.clipboard.writeText(url); }
@@ -115,9 +118,9 @@ async function copyShareLink() {
   }
   btn.textContent = ok ? 'link copied ✓' : 'press ⌘C';
   btn.classList.toggle('copied', ok);
-  clearTimeout(btn._t); btn._t = setTimeout(() => { btn.textContent = SHARE_LABEL; btn.classList.remove('copied'); }, 1800);
+  clearTimeout(btn._t); btn._t = setTimeout(() => { btn.textContent = label; btn.classList.remove('copied'); }, 1800);
 }
-$('shareListBtn').addEventListener('click', copyShareLink);
+$('shareListBtn').addEventListener('click', () => copyShareLink());
 
 /* clear all — two presses, like deleting a saved list; the draft autosave picks up the
    empty garden, so a saved list is the way back */

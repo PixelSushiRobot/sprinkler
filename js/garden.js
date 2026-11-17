@@ -73,9 +73,9 @@ function drawWhale(ctx, S, order, imgs, ink, sub, line) {
   ctx.textAlign = 'left';
 }
 export function renderGarden() {
-  const order = displayOrder();
-  drawGarden(order, null);                                                    // instant identicons
+  const order = displayOrder(), drawn = () => window.dispatchEvent(new Event('sprinkler:card'));   // share code re-snapshots the PNG
+  drawGarden(order, null); drawn();                                           // instant identicons
   // upgrade to real avatars — only the ones the card actually shows
   const shown = isWhale() ? order.slice(0, STRIP) : order;
-  if (full()) Promise.all(shown.map(oi => loadImg(creators[oi].avatar))).then(imgs => drawGarden(order, imgs));
+  if (full()) Promise.all(shown.map(oi => loadImg(creators[oi].avatar))).then(imgs => { drawGarden(order, imgs); drawn(); });
 }

@@ -27,6 +27,23 @@
   -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Sprinkler</title>
+  <meta name="description" content="Pour one pot of tez across your favorite creators in a single Tezos transaction.">
+
+  <!-- link previews (X, Farcaster, Bluesky, Discord, Telegram, iMessage…). Static on
+       purpose: crawlers don't run JS, so every link — garden ?to= links too — gets this -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Sprinkler">
+  <meta property="og:title" content="Sprinkler">
+  <meta property="og:description" content="Pour one pot of tez across your favorite creators in a single Tezos transaction.">
+  <meta property="og:url" content="https://sprinkler.psr.fyi/">
+  <meta property="og:image" content="https://sprinkler.psr.fyi/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Sprinkler wordmark">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sprinkler">
+  <meta name="twitter:description" content="Pour one pot of tez across your favorite creators in a single Tezos transaction.">
+  <meta name="twitter:image" content="https://sprinkler.psr.fyi/og-image.png">
 
   <!-- 1. The Main Icon -->
   <link rel="icon" type="image/svg+xml" sizes="any" href="icon.svg">
@@ -146,24 +163,32 @@
         </div>
         <div id="successPane" style="display:none">
           <canvas id="gardenCanvas" width="1080" height="1080"></canvas>
+          <p class="cardcap" id="cardHint" aria-live="polite"></p>
           <div class="success-head">Garden watered ✓</div>
           <p class="ov-lead" id="successLead"></p>
           <a class="txlink" id="txLink" target="_blank" rel="noopener">view on tzkt ↗</a>
-          <button class="btn ghost" id="saveAfterBtn" type="button" style="width:100%">save this garden as a list</button>
-          <div class="savename" id="saveAfter" style="display:none">
-            <input id="saveAfterName" type="text" placeholder="name this list" maxlength="40" autocomplete="off" spellcheck="false" aria-label="List name">
-            <button class="mbtn" id="saveAfterOk" type="button">save</button>
-            <button class="mbtn" id="saveAfterCancel" type="button">cancel</button>
+          <div class="share-main">
+            <a class="btn" id="shareX" target="_blank" rel="noopener">Share on X</a>
+            <div class="share-row">
+              <a class="sbtn" id="shareFc" target="_blank" rel="noopener">Farcaster</a>
+              <a class="sbtn" id="shareBs" target="_blank" rel="noopener">Bluesky</a>
+            </div>
+            <div class="share-row">
+              <button class="sbtn" id="shareImg" type="button" hidden>Share card</button>
+              <button class="sbtn" id="dlBtn" type="button">↓ Download card</button>
+            </div>
           </div>
-          <div class="share-label">Share your garden</div>
-          <div class="share-box" id="shareText"></div>
-          <button class="btn" id="shareX" style="width:100%">Share on X</button>
-          <div class="share-row">
-            <button class="sbtn" id="shareImg" style="display:none">Share card</button>
-            <a class="sbtn" id="shareFc" target="_blank" rel="noopener">Farcaster</a>
-            <a class="sbtn" id="shareBs" target="_blank" rel="noopener">Bluesky</a>
-            <button class="sbtn" id="copyBtn">Copy text</button>
-            <button class="sbtn" id="dlBtn">↓ Card</button>
+          <div class="share-foot" id="shareFoot">
+            <button class="flink" id="copyListAfter" type="button">copy list link</button>
+            <span aria-hidden="true">·</span>
+            <button class="flink" id="saveAfterBtn" type="button">save as list</button>
+          </div>
+          <div class="share-foot-pane" id="saveAfter" style="display:none">
+            <div class="savename">
+              <input id="saveAfterName" type="text" placeholder="name this list" maxlength="40" autocomplete="off" spellcheck="false" aria-label="List name">
+              <button class="mbtn" id="saveAfterOk" type="button">save</button>
+              <button class="mbtn" id="saveAfterCancel" type="button">cancel</button>
+            </div>
           </div>
         </div>
       </div>
