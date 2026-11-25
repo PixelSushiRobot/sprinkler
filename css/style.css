@@ -170,16 +170,18 @@
       gap: var(--sp-5)
     }
 
+    /* minmax(0, …) lets the columns shrink below their content, so a long wallet
+       address can't push a column wider than its half */
     .pcols {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: var(--sp-5);
       align-items: start
     }
 
     @media (max-width:860px) {
       .pcols {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         gap: var(--sp-5)
       }
     }
@@ -847,6 +849,8 @@
       border: none;
       background: transparent;
       color: var(--muted);
+      /* icon size, not text: the × glyph matches the 15px crown icon in the opposite
+         corner and sits centred in its 20px hit box, so it stays a px literal */
       font-size: 15px;
       line-height: 1;
       display: flex;
@@ -912,11 +916,21 @@
       align-items: center;
       justify-content: center;
       color: var(--divider);
+      /* icon size, not text: a decorative placeholder glyph in a 172px slot. No token
+         fits — --fs-lg (16px) reads too faint at this size and --fs-display scales
+         with the viewport — so it stays a px literal */
       font-size: 22px
     }
 
     html[data-theme="light"] .eslot {
       color: var(--line)
+    }
+
+    /* same for system-follow when the OS is light, so "system" matches "light" */
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme]) .eslot {
+        color: var(--line)
+      }
     }
 
     /* whale mode (13+): the garden becomes a compact list that scrolls inside a fixed

@@ -16,6 +16,8 @@ index.html        markup only
 css/style.css      all styles
 js/
   config.js        network config (Shadownet / Mainnet), active payout network
+  theme-init.js    applies the saved theme before first paint (classic script in <head>)
+  theme.js         the light / dark / system toggle
   dom.js           tiny $(id) helper
   state.js         the garden's creators, grid columns, split method, split math
   avatar.js        identicon generation (rng + SVG/canvas)
